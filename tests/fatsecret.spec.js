@@ -1,0 +1,13 @@
+import {test,expect} from '@playwright/test';
+// Synthetic data, unrelated to any uploaded report.
+const csv=`Date,Cals ( kcal),Fat( g),Sat( g),Carbs( g),Fiber( g),Sugar( g),Prot( g),Sod( mg),Chol( mg),Potassium( mg)\n"Wednesday, May 6, 2026",300,10,,30,,,20,,,\n Breakfast,300,10,,30,,,20,,,\n  Example Bread,200,5,,30,,,10,100,,\n   50 g\n  Example Fruit,100,5,,0,,,10,,,\n   1 fruit\nTotal,300,10,,30,,,20,,,\n`;
+test('vista previa importa, evita duplicados y reutiliza raciones sin mostrar gramos falsos',async({page})=>{
+ await page.route('**/cloud-config.js',r=>r.fulfill({contentType:'application/javascript',body:"export const cloudConfig={url:'',publicKey:''};"}));
+ await page.goto('/#perfil');const file={name:'synthetic.csv',mimeType:'text/csv',buffer:Buffer.from(csv)};
+ await page.locator('#fatsecret-file').setInputFiles(file);await expect(page.locator('#fatsecret-preview')).toContainText('2 registros nuevos');
+ expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('mi-nutricion')||'{"entries":[]}').entries.length)).toBe(0);
+ await page.getByRole('button',{name:'Confirmar importación de FatSecret'}).click();await expect(page.locator('#fatsecret-preview')).toContainText('Importación guardada: 2 registros');
+ await page.locator('#fatsecret-file').setInputFiles(file);await expect(page.locator('#fatsecret-preview')).toContainText('0 registros nuevos; 2 ya importados');await page.getByRole('button',{name:'Confirmar importación de FatSecret'}).click();await expect(page.locator('#fatsecret-preview')).toContainText('No hay registros');
+ await page.goto('/#hoy');await page.locator('#date').fill('2026-05-06');await page.locator('#date').dispatchEvent('change');await expect(page.locator('.hero .big')).toContainText('300');await expect(page.locator('.food-row').filter({hasText:'Example Fruit'})).toContainText('1 fruit');await expect(page.locator('.food-row').filter({hasText:'Example Fruit'})).not.toContainText('100 g');
+ await page.getByRole('button',{name:'Registrar comida'}).click();await page.locator('#search').fill('Example Fruit');await expect(page.locator('.result')).toContainText('ración de referencia');await page.locator('#grams-0').fill('2');await page.getByRole('button',{name:'Añadir Example Fruit',exact:true}).click();await expect(page.locator('.hero .big')).toContainText('500');await page.reload();await expect(page.locator('.hero .big')).toContainText('0');await page.locator('#date').fill('2026-05-06');await page.locator('#date').dispatchEvent('change');await expect(page.locator('.hero .big')).toContainText('500');
+});
