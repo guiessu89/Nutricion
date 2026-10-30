@@ -3,19 +3,19 @@ import {test,expect} from '@playwright/test';
 test.beforeEach(async({page})=>{await page.route('**/cloud-config.js',r=>r.fulfill({contentType:'application/javascript',body:"export const cloudConfig={url:'',publicKey:''};"}));});
 test('registro de comida, persistencia, peso, actividad y perfil',async({page})=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
- await page.goto('/');await expect(page.locator('h1')).toHaveText('Tu día, a tu manera');
+ await page.goto('/');await expect(page.locator('h1')).toHaveText('Hoy');
  await page.getByRole('button',{name:'Registrar comida'}).click();
  await page.locator('#search').fill('Avena');await page.locator('#grams-0').fill('50');await page.getByRole('button',{name:'Añadir Avena en copos'}).click();
  await expect(page.locator('.hero .big')).toContainText('195');await page.reload();await expect(page.locator('.hero .big')).toContainText('195');
  await page.getByRole('link',{name:'Evolución',exact:false}).first().click();await page.locator('[name=weight]').fill('75.5');await page.getByRole('button',{name:'Guardar registro del día'}).click();await expect(page.locator('table')).toContainText('75.5 kg');
  await page.getByRole('link',{name:'Actividad'}).click();await page.locator('[name=minutes]').fill('30');await page.getByRole('button',{name:'Guardar actividad'}).click();await expect(page.locator('.food-row')).toContainText('Caminar · 30 min');
- await page.getByRole('link',{name:'Mi perfil'}).click();await page.locator('[name=name]').fill('Ana');await page.getByRole('button',{name:'Guardar perfil'}).click();await page.getByRole('link',{name:'Hoy',exact:false}).click();await expect(page.locator('h1')).toHaveText('Tu día, Ana');
+ await page.getByRole('link',{name:'Mi perfil'}).click();await page.locator('[name=name]').fill('Ana');await page.getByRole('button',{name:'Guardar perfil'}).click();await page.getByRole('link',{name:'Hoy',exact:false}).click();await expect(page.locator('h1')).toHaveText('Hoy');
  await page.getByRole('button',{name:'Eliminar Avena en copos'}).click();await expect(page.locator('.hero .big')).toContainText('0');expect(errors).toEqual([]);
 });
 
 test('copia exportada se puede restaurar y un archivo inválido no altera los datos',async({page})=>{
  await page.goto('/#perfil');
- await page.locator('[name=name]').fill('Perfil de prueba');
+ await page.locator('[name=name]').fill('Perfil de prueba');await page.locator('#profile-form [name=age]').fill('30');
  await page.getByRole('button',{name:'Guardar perfil'}).click();
  const downloadPromise=page.waitForEvent('download');
  await page.getByRole('button',{name:'Exportar copia JSON'}).click();
@@ -24,14 +24,14 @@ test('copia exportada se puede restaurar y un archivo inválido no altera los da
  for await(const chunk of stream)chunks.push(chunk);
  const backup=Buffer.concat(chunks);
  expect(JSON.parse(backup).profile.name).toBe('Perfil de prueba');
- await page.locator('[name=name]').fill('Otro nombre');await page.getByRole('button',{name:'Guardar perfil'}).click();
+ await page.locator('#profile-form [name=age]').fill('31');await page.getByRole('button',{name:'Guardar perfil'}).click();
  await page.locator('#import-file').setInputFiles({name:'invalido.json',mimeType:'application/json',buffer:Buffer.from('{}')});
  await expect(page.locator('#toast')).toHaveText('Copia no válida. No se han modificado tus datos.');
- await page.reload();await expect(page.locator('[name=name]')).toHaveValue('Otro nombre');
+ await page.reload();await expect(page.locator('#profile-form [name=age]')).toHaveValue('31');
  page.once('dialog',dialog=>dialog.accept());
  await page.locator('#import-file').setInputFiles({name:'copia.json',mimeType:'application/json',buffer:backup});
- await expect(page.locator('[name=name]')).toHaveValue('Perfil de prueba');
- await page.reload();await expect(page.locator('[name=name]')).toHaveValue('Perfil de prueba');
+ await expect(page.locator('[name=name]')).toHaveValue('Perfil de prueba');await expect(page.locator('#profile-form [name=age]')).toHaveValue('30');
+ await page.reload();await expect(page.locator('[name=name]')).toHaveValue('Perfil de prueba');await expect(page.locator('#profile-form [name=age]')).toHaveValue('30');
 });
 
 test('móvil: navegación y registro sin desbordamiento horizontal',async({page})=>{
@@ -62,7 +62,7 @@ test('predictor previsualiza y aplica objetivos persistentes sin sobrescribirlos
  await f.getByRole('button',{name:'Estimar objetivos'}).click();await expect(page.locator('#prediction')).toContainText('2760 kcal/día');
  await expect(page.locator('#profile-form [name=goal]')).toHaveValue('2000');
  await page.getByRole('button',{name:'Aplicar estos objetivos'}).click();await page.reload();await expect(page.locator('#profile-form [name=goal]')).toHaveValue('2760');
- await page.getByRole('button',{name:'Guardar perfil'}).click();await page.reload();await expect(page.locator('#predictor-form [name=sex]')).toHaveValue('male');
+ await page.getByRole('button',{name:'Guardar perfil'}).click();await page.reload();await expect(page.locator('#predictor-form [name=sex]')).toHaveValue('male');await expect(page.locator('#predictor-form [name=sex]')).toBeDisabled();await expect(page.locator('#predictor-form [name=height]')).not.toBeEditable();
  await page.locator('#predictor-form [name=excluded]').check();await page.getByRole('button',{name:'Estimar objetivos'}).click();await expect(page.locator('#prediction')).toContainText('profesional');await expect(page.locator('#apply-prediction')).toHaveCount(0);
 });
 
@@ -104,4 +104,15 @@ test('peso objetivo y ritmos calculan plazo que cambia con calorías y se conser
  await page.locator('#target-preview [name=goal]').fill(String(fast));await page.getByRole('button',{name:'Aplicar estos objetivos'}).click();await page.reload();
  await expect(page.locator('#predictor-form [name=targetWeight]')).toHaveValue('70');await expect(page.locator('#predictor-form [name=pace]')).toHaveValue('fast');await expect(page.locator('#profile-timeline')).toContainText('80 → 70 kg');
  const before=await page.locator('#profile-timeline').textContent();await page.locator('#profile-form [name=goal]').fill(String(fast+100));expect(await page.locator('#profile-timeline').textContent()).not.toBe(before);
+});
+
+test('datos fijos de solo lectura y copia profesional en todas las secciones',async({page})=>{
+ await page.goto('/#perfil');const profile=page.locator('#profile-form');await profile.locator('[name=name]').fill('Ana');await profile.locator('[name=height]').fill('170');await profile.locator('[name=age]').fill('30');await profile.getByRole('button',{name:'Guardar perfil'}).click();
+ await expect(profile.locator('[name=name]')).not.toBeEditable();await expect(profile.locator('[name=height]')).not.toBeEditable();await expect(page.locator('#predictor-form [name=height]')).not.toBeEditable();await expect(profile.locator('[name=age]')).toBeEditable();await expect(profile.locator('[name=goal]')).toBeEditable();
+ await profile.locator('[name=age]').fill('31');await profile.getByRole('button',{name:'Guardar perfil'}).click();await page.reload();await expect(page.locator('#profile-form [name=name]')).not.toBeEditable();await expect(page.locator('#profile-form [name=age]')).toHaveValue('31');
+ for(const route of ['hoy','alimentacion','evolucion','actividad','perfil']){
+  await page.goto('/#'+route);await expect(page.locator('body')).not.toContainText(/a tu ritmo|a tu manera|pequeños hábitos|grandes cambios|cada pequeño paso|bienestar|para cuidarte|constancia importa/i);
+  if(route!=='perfil')await expect(page.locator('#account-panel')).toHaveCount(0);
+ }
+ await expect(page.locator('#content > :last-child')).toHaveAttribute('id','account-panel');
 });

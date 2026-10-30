@@ -21,7 +21,7 @@ test('remoto: guarda en servidor, recupera al recargar, sin registros en almacen
  const db=await setup(page);await login(page);await page.locator('#profile-form [name=name]').fill('Remoto');await page.getByRole('button',{name:'Guardar perfil'}).click();await expect(page.locator('#toast')).toHaveText('Perfil actualizado');expect(db.payload.profile.name).toBe('Remoto');
  expect(await page.evaluate(()=>localStorage.getItem('mi-nutricion'))).toBeNull();
  await page.reload();await expect(page.locator('#login-form')).toBeVisible();await page.locator('[name=email]').fill('owner@example.org');await page.locator('[name=password]').fill('test-password');await page.getByRole('button',{name:'Entrar',exact:true}).click();await expect(page.locator('#profile-form [name=name]')).toHaveValue('Remoto');
- db.setConflict();await page.locator('#profile-form [name=name]').fill('Pendiente');await page.getByRole('button',{name:'Guardar perfil'}).click();await expect(page.getByRole('heading',{name:'Guardado sin confirmar'})).toBeVisible();expect(db.payload.profile.name).toBe('Remoto');await expect(page.getByRole('button',{name:'Exportar cambios pendientes'})).toBeVisible();
+ db.setConflict();await page.locator('#profile-form [name=goal]').fill('2100');await page.getByRole('button',{name:'Guardar perfil'}).click();await expect(page.getByRole('heading',{name:'Guardado sin confirmar'})).toBeVisible();expect(db.payload.profile.name).toBe('Remoto');await expect(page.getByRole('button',{name:'Exportar cambios pendientes'})).toBeVisible();
 });
 test('migración confirmada conserva el original, fallo de red no muestra éxito',async({page})=>{
  const db=await setup(page,{legacy:true});await login(page);await expect(page.locator('#profile-form [name=name]')).toHaveValue('');page.once('dialog',d=>d.accept());await page.getByRole('button',{name:'Migrar datos antiguos del navegador'}).click();await expect(page.locator('#toast')).toHaveText('Migración confirmada por el servidor');expect(db.payload.profile.name).toBe('Antiguo');expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('mi-nutricion')).profile.name)).toBe('Antiguo');
@@ -33,4 +33,13 @@ test('error de login 400 se explica sin sugerir que falló un guardado',async({p
  await page.route('https://test.supabase.co/auth/v1/token?*',r=>r.fulfill({status:400,headers:{'Access-Control-Allow-Origin':'*'},json:{code:400,error_code:'invalid_credentials',message:'Sensitive backend details'}}));
  await page.goto('/');await page.locator('[name=email]').fill('user@example.org');await page.locator('[name=password]').fill('test-only');await page.getByRole('button',{name:'Entrar',exact:true}).click();
  await expect(page.locator('#cloud-error')).toContainText('Email o contraseña incorrectos');await expect(page.locator('#cloud-error')).not.toContainText('guardado');await expect(page.getByRole('button',{name:'Entrar',exact:true})).toBeEnabled();
+});
+
+test('acceso, actualización y cierre solo en el último apartado de perfil',async({page})=>{
+ await setup(page);await login(page);await expect(page.locator('#account-status')).toHaveText('Sesión iniciada.');await expect(page.locator('#content > :last-child')).toHaveAttribute('id','account-panel');
+ for(const route of ['hoy','alimentacion','evolucion','actividad']){
+  await page.goto('/#'+route);await expect(page.locator('#logout')).toHaveCount(0);await expect(page.locator('#cloud-refresh')).toHaveCount(0);await expect(page.locator('body')).not.toContainText('Base de datos conectada');
+ }
+ await page.goto('/#perfil');await page.getByRole('button',{name:'Actualizar datos',exact:true}).click();await expect(page.locator('#account-status')).toHaveText('Datos actualizados.');
+ await page.getByRole('button',{name:'Cerrar sesión',exact:true}).click();await expect(page).toHaveURL(/#perfil$/);await expect(page.locator('#account-panel #login-form')).toBeVisible();await expect(page.locator('#account-status')).toHaveText('Sesión cerrada.');
 });

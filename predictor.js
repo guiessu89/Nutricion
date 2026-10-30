@@ -37,7 +37,7 @@ export function predictorMarkup(profile,latestWeight){
  const option=(value,label,current)=>`<option value="${value}" ${value===current?'selected':''}>${label}</option>`;
  // Only finite numeric values enter HTML; user text is never interpolated.
  const numeric=v=>Number.isFinite(Number(v))&&Number(v)>0?Number(v):'';
- return `<div class="card"><h2>Calcula tus objetivos</h2><p class="sub">Estimación inicial para adultos de 18–80 años. Elige tu actividad habitual completa: ya incluye ejercicio, no sumaremos sus calorías otra vez.</p><form id="predictor-form" class="fields">
+ return `<div class="card"><h2>Cálculo de objetivos</h2><p class="sub">Estimación inicial para adultos de 18–80 años. Elige tu actividad habitual completa: ya incluye ejercicio, no sumaremos sus calorías otra vez.</p><form id="predictor-form" class="fields">
  <label>Peso actual (kg)<input name="weight" type="number" required min="30" max="300" step="0.1" value="${numeric(latestWeight??saved.weight)}"></label>
  <label>Altura (cm)<input name="height" type="number" required min="120" max="230" step="0.1" value="${numeric(profile.height??saved.height)}"></label>
  <label>Edad (años)<input name="age" type="number" required min="18" max="80" step="1" value="${numeric(profile.age??saved.age)}"></label>
@@ -117,5 +117,5 @@ export function estimateWeightTimeline(plan,calories=plan?.goal){
 }
 export function weightTimelineMarkup(plan,calories=plan?.goal){
  const result=estimateWeightTimeline(plan,Number(calories));if(!result)return '';
- return `<div class="card" style="margin-top:16px"><h3>Tu plan: ${result.weight} → ${result.targetWeight} kg</h3><p>${result.kgToLose.toFixed(1)} kg de diferencia · ${Number(calories)} kcal/día.</p><p>${result.weeks?`<strong>Plazo orientativo: unas ${result.weeks} semanas</strong> (${(result.weeks/4.35).toFixed(1)} meses).`:result.reason}</p><p class="catalog-info">Ritmo inicial estimado: ${result.initialKgPerWeek.toFixed(2)} kg/semana. El ritmo se reduce al bajar el gasto.${result.limited?' Los límites de déficit o las calorías editadas reducen el ritmo solicitado.':''} Estimación desde el peso utilizado en el cálculo, no una fecha garantizada. Revisa la tendencia real y recalcula cada 2–4 semanas.</p></div>`;
+ return `<div class="card" style="margin-top:16px"><h3>Plan: ${result.weight} → ${result.targetWeight} kg</h3><p>${result.kgToLose.toFixed(1)} kg de diferencia · ${Number(calories)} kcal/día.</p><p>${result.weeks?`<strong>Plazo orientativo: unas ${result.weeks} semanas</strong> (${(result.weeks/4.35).toFixed(1)} meses).`:result.reason}</p><p class="catalog-info">Ritmo inicial estimado: ${result.initialKgPerWeek.toFixed(2)} kg/semana. El ritmo se reduce al bajar el gasto.${result.limited?' Los límites de déficit o las calorías editadas reducen el ritmo solicitado.':''} Estimación desde el peso utilizado en el cálculo, no una fecha garantizada. Revisa la tendencia real y recalcula cada 2–4 semanas.</p></div>`;
 }
