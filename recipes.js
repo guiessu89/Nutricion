@@ -1,0 +1,40 @@
+import {totals,entryNutrients,validRecipe} from './data.js';
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=n=>Number(n.toFixed(1));
+const nutrition=n=>`${fmt(n.kcal)} kcal · P ${fmt(n.p)} g · HC ${fmt(n.c)} g · G ${fmt(n.f)} g`;
+export function recipeTotals(recipe){return totals(recipe.ingredients);}
+export function recipeFood(recipe,mode='portion'){
+ if(!validRecipe(recipe))throw Error('Completa el nombre, los ingredientes y el número de raciones.');
+ if(!['portion','grams'].includes(mode))throw Error('Unidad de receta no válida.');
+ if(mode==='grams'&&!recipe.finalWeight)throw Error('Indica el peso final preparado para calcular por gramos.');
+ const total=recipeTotals(recipe),factor=mode==='grams'?100/recipe.finalWeight:1/recipe.servings;
+ return {id:`recipe-${recipe.id}-${mode}`,recipeId:recipe.id,name:recipe.name+(mode==='grams'?' · por gramos':''),source:'Receta propia',basis:mode==='grams'?'100g':'portion',...(mode==='portion'?{portionLabel:`1 ración de ${recipe.name} (receta de ${recipe.servings} raciones)`}:{}),...Object.fromEntries(Object.entries(total).map(([k,v])=>[k,v*factor]))};
+}
+export function recipeFoods(recipes){return recipes.flatMap(r=>[recipeFood(r),...(r.finalWeight?[recipeFood(r,'grams')]:[])]);}
+export class RecipeUI{
+ constructor(actions){this.actions=actions;this.draft=null;}
+ reset(){this.draft=null;}
+ newDraft(){return {id:crypto.randomUUID(),name:'',servings:1,finalWeight:null,notes:'',ingredients:[]};}
+ capture(){const f=this.container?.querySelector('#recipe-form');if(!f)return;this.draft.name=f.elements.name.value;this.draft.servings=Number(f.elements.servings.value);this.draft.finalWeight=f.elements.finalWeight.value?Number(f.elements.finalWeight.value):null;this.draft.notes=f.elements.notes.value;}
+ addIngredient(food,amount){if(!this.draft)this.draft=this.newDraft();this.draft.ingredients.push({id:crypto.randomUUID(),food:structuredClone(food),grams:food.basis==='portion'?null:amount,servings:food.basis==='portion'?amount:null});}
+ summary(r){
+  const total=recipeTotals(r);return `<p><strong>Total: ${nutrition(total)}</strong></p>${r.servings>0?`<p>Por ración (1/${fmt(r.servings)}): ${nutrition(Object.fromEntries(Object.entries(total).map(([k,v])=>[k,v/r.servings])))}</p>`:''}${r.finalWeight>0?`<p>Por 100 g preparados: ${nutrition(Object.fromEntries(Object.entries(total).map(([k,v])=>[k,v*100/r.finalWeight])))}</p>`:'<p class="catalog-info">Indica el peso final preparado para habilitar el cálculo por gramos. No se deduce del peso de los ingredientes.</p>'}`;
+ }
+ render(container){
+  this.container=container;if(!this.draft)this.draft=this.newDraft();const r=this.draft;
+  container.innerHTML=`<p class="sub">Ingredientes, cantidades y rendimiento final de cada preparación.</p><section class="card"><h2>${this.actions.getRecipes().some(x=>x.id===r.id)?'Editar receta':'Nueva receta'}</h2><form id="recipe-form"><div class="fields"><label>Nombre de la receta<input name="name" maxlength="120" required value="${esc(r.name)}"></label><label>Número de raciones<input name="servings" type="number" min="0.1" max="1000" step="0.1" required value="${r.servings||''}"></label><label>Peso final preparado (g, opcional)<input name="finalWeight" type="number" min="0.1" max="100000" step="0.1" value="${r.finalWeight??''}"></label><label>Notas de preparación<input name="notes" maxlength="2000" value="${esc(r.notes)}"></label></div><p class="catalog-info">Pesa la preparación completa después de cocinar para obtener valores por gramos. Se conservan los nutrientes de los ingredientes; el modelo no descuenta pérdidas de nutrientes durante la cocción. Los cambios se guardan al pulsar Guardar receta.</p><button type="button" id="recipe-add">Buscar ingrediente</button><div id="recipe-ingredients">${r.ingredients.map((e,i)=>`<div class="food-row"><div>${esc(e.food.name)}<small>${nutrition(entryNutrients(e))}${e.food.basis==='portion'?' · Ración: '+esc(e.food.portionLabel||'ración de referencia'):''}</small></div><label>${e.food.basis==='portion'?'Raciones':'Gramos'}<input data-ingredient="${i}" aria-label="Cantidad de ingrediente ${i+1}" type="number" min="0.1" max="10000" step="0.1" required value="${e.food.basis==='portion'?e.servings:e.grams}" style="max-width:110px"></label><button type="button" data-remove-ingredient="${i}" aria-label="Quitar ingrediente ${i+1}">×</button></div>`).join('')||'<p class="empty">Sin ingredientes. Busca un alimento para añadirlo.</p>'}</div><div id="recipe-summary">${this.summary(r)}</div><button class="primary">Guardar receta</button> <button type="button" id="recipe-reset">Nueva receta / descartar borrador</button><p id="recipe-error" role="alert"></p></form></section><section class="card"><h2>Recetas guardadas</h2>${this.actions.getRecipes().map(saved=>`<article class="meal"><h3>${esc(saved.name)}</h3><p class="muted">${saved.servings} raciones${saved.finalWeight?' · '+saved.finalWeight+' g preparados':''}</p>${this.summary(saved)}${saved.notes?`<p>${esc(saved.notes)}</p>`:''}<div class="search-actions"><button data-record-portion="${esc(saved.id)}">Añadir por raciones al diario</button>${saved.finalWeight?`<button data-record-grams="${esc(saved.id)}">Añadir por gramos al diario</button>`:''}<button data-edit-recipe="${esc(saved.id)}">Editar</button><button data-delete-recipe="${esc(saved.id)}" class="danger">Eliminar</button></div></article>`).join('')||'<p class="empty">Sin recetas guardadas.</p>'}</section>`;
+  const form=container.querySelector('#recipe-form'),error=container.querySelector('#recipe-error');
+  form.addEventListener('input',e=>{
+   this.capture();if(e.target.dataset.ingredient!==undefined){const i=Number(e.target.dataset.ingredient),entry=this.draft.ingredients[i],v=Number(e.target.value);if(entry.food.basis==='portion')entry.servings=v;else entry.grams=v;}
+   const valid=this.draft.ingredients.every(e=>Number.isFinite(e.food.basis==='portion'?e.servings:e.grams)&&(e.food.basis==='portion'?e.servings:e.grams)>0);
+   container.querySelector('#recipe-summary').innerHTML=valid?this.summary(this.draft):'<p>Completa las cantidades para calcular los nutrientes.</p>';
+  });
+  container.querySelector('#recipe-add').onclick=()=>{this.capture();this.actions.chooseIngredient();};
+  container.querySelector('#recipe-reset').onclick=()=>{if((this.draft.name||this.draft.ingredients.length)&&!confirm('¿Descartar el borrador y crear una receta nueva?'))return;this.reset();this.render(container);};
+  container.querySelectorAll('[data-remove-ingredient]').forEach(b=>b.onclick=()=>{this.capture();this.draft.ingredients.splice(Number(b.dataset.removeIngredient),1);this.render(container);});
+  form.onsubmit=async e=>{e.preventDefault();this.capture();if(!validRecipe(this.draft)){error.textContent='Indica un nombre, raciones válidas y al menos un ingrediente con cantidad válida.';return;}if(!await this.actions.saveRecipe(structuredClone(this.draft)))return;this.reset();this.render(container);container.querySelector('#recipe-error').textContent='Receta guardada.';};
+  container.querySelectorAll('[data-edit-recipe]').forEach(b=>b.onclick=()=>{this.capture();if((this.draft.name||this.draft.ingredients.length)&&!confirm('¿Descartar el borrador y abrir la receta guardada?'))return;this.draft=structuredClone(this.actions.getRecipes().find(x=>x.id===b.dataset.editRecipe));this.render(container);container.querySelector('[name=name]').focus();});
+  container.querySelectorAll('[data-delete-recipe]').forEach(b=>b.onclick=async()=>{if(!confirm('¿Eliminar esta receta? Los registros del diario se conservarán.'))return;if(!await this.actions.deleteRecipe(b.dataset.deleteRecipe))return;if(this.draft.id===b.dataset.deleteRecipe)this.reset();this.render(container);});
+  for(const [attribute,mode] of [['recordPortion','portion'],['recordGrams','grams']])container.querySelectorAll(mode==='portion'?'[data-record-portion]':'[data-record-grams]').forEach(b=>b.onclick=()=>{this.capture();this.actions.recordRecipe(this.actions.getRecipes().find(x=>x.id===b.dataset[attribute]),mode);});
+ }
+}

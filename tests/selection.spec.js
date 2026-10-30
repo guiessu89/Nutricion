@@ -1,0 +1,10 @@
+import {test,expect} from '@playwright/test';
+test('frecuentes por comida y varios alimentos se guardan en una confirmación',async({page})=>{
+ await page.route('**/cloud-config.js',r=>r.fulfill({contentType:'application/javascript',body:"export const cloudConfig={url:'',publicKey:''};"}));
+ await page.addInitScript(()=>localStorage.setItem('mi-nutricion',JSON.stringify({version:1,profile:{goal:2000,protein:120,carbs:250,fat:65},weights:[],activities:[],custom:[],entries:[{id:'a',date:'2026-01-01',meal:'Desayuno',grams:70,food:{name:'Alimento desayuno frecuente',kcal:100,p:5,c:10,f:2}},{id:'b',date:'2026-01-01',meal:'Cena',grams:150,food:{name:'Alimento cena frecuente',kcal:200,p:5,c:20,f:5}}]})));
+ await page.goto('/#hoy');await page.getByRole('button',{name:'Añadir a Desayuno'}).click();await expect(page.locator('#results h3')).toContainText('Frecuentes en Desayuno');await expect(page.locator('.result').first()).toContainText('Alimento desayuno frecuente');await expect(page.locator('#grams-0')).toHaveValue('70');
+ await page.getByRole('button',{name:'Añadir Alimento desayuno frecuente',exact:true}).click();await expect(page.locator('#food-dialog')).toBeVisible();
+ await page.locator('#search').fill('Manzana');await page.getByRole('button',{name:'Añadir Manzana con piel',exact:true}).click();await expect(page.locator('#food-selection')).toContainText('Selección · 2 alimentos');expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('mi-nutricion')).entries.length)).toBe(2);
+ await page.locator('[data-selection-amount="1"]').fill('200');await page.getByRole('button',{name:'Confirmar selección',exact:true}).click();await expect(page.locator('#food-dialog')).not.toBeVisible();expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('mi-nutricion')).entries.length)).toBe(4);await expect(page.locator('.hero .big')).toContainText('174');
+ await page.getByRole('button',{name:'Añadir a Cena'}).click();await expect(page.locator('.result').first()).toContainText('Alimento cena frecuente');await expect(page.locator('#results h3')).toContainText('Frecuentes en Cena');
+});

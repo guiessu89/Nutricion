@@ -1,0 +1,19 @@
+import {test,expect} from '@playwright/test';
+test('buscar ingredientes, calcular receta, persistir y registrar por raciones y gramos',async({page})=>{
+ await page.route('**/cloud-config.js',r=>r.fulfill({contentType:'application/javascript',body:"export const cloudConfig={url:'',publicKey:''};"}));
+ await page.goto('/#recetas');const form=page.locator('#recipe-form');await form.locator('[name=name]').fill('Avena preparada');await form.locator('[name=servings]').fill('2');await form.locator('[name=finalWeight]').fill('200');
+ await page.getByRole('button',{name:'Buscar ingrediente'}).click();await expect(page.locator('#meal-select')).not.toBeVisible();await page.locator('#search').fill('Avena');await page.locator('#grams-0').fill('100');await page.getByRole('button',{name:'Añadir Avena en copos'}).click();await page.getByRole('button',{name:'Confirmar selección',exact:true}).click();
+ await expect(page.locator('#recipe-summary')).toContainText('Total: 389 kcal');await expect(page.locator('#recipe-summary')).toContainText('Por 100 g preparados: 194.5 kcal');
+ await page.locator('[data-ingredient="0"]').fill('200');await expect(page.locator('#recipe-summary')).toContainText('Total: 778 kcal');await page.locator('[data-ingredient="0"]').fill('100');
+ await page.getByRole('button',{name:'Guardar receta',exact:true}).click();await expect(page.locator('#recipe-error')).toHaveText('Receta guardada.');await page.reload();await expect(page.locator('article')).toContainText('Avena preparada');
+ await page.getByRole('button',{name:'Añadir por raciones al diario'}).click();await expect(page.locator('#meal-select')).toBeVisible();await page.locator('#meal-select').selectOption('Cena');await page.locator('#grams-0').fill('1');await page.getByRole('button',{name:'Añadir Avena preparada',exact:true}).click();await page.getByRole('button',{name:'Confirmar selección',exact:true}).click();
+ await page.getByRole('button',{name:'Añadir por gramos al diario'}).click();await page.locator('#grams-0').fill('100');await page.getByRole('button',{name:'Añadir Avena preparada · por gramos',exact:true}).click();await page.getByRole('button',{name:'Confirmar selección',exact:true}).click();
+ await page.goto('/#hoy');await expect(page.locator('.hero .big')).toContainText('389');
+ await page.goto('/#recetas');await page.getByRole('button',{name:'Editar',exact:true}).click();await page.locator('[data-ingredient="0"]').fill('200');await page.getByRole('button',{name:'Guardar receta',exact:true}).click();await page.goto('/#hoy');await expect(page.locator('.hero .big')).toContainText('389');
+ await page.goto('/#recetas');page.once('dialog',d=>d.accept());await page.getByRole('button',{name:'Eliminar',exact:true}).click();await expect(page.locator('article')).toHaveCount(0);await page.goto('/#hoy');await expect(page.locator('.hero .big')).toContainText('389');
+});
+
+test('receta incompleta no se guarda y gramos no aparecen sin peso final',async({page})=>{
+ await page.route('**/cloud-config.js',r=>r.fulfill({contentType:'application/javascript',body:"export const cloudConfig={url:'',publicKey:''};"}));await page.goto('/#recetas');await page.locator('#recipe-form [name=name]').fill('Receta sin peso final');await page.getByRole('button',{name:'Guardar receta',exact:true}).click();await expect(page.locator('#recipe-error')).toContainText('al menos un ingrediente');
+ await page.getByRole('button',{name:'Buscar ingrediente'}).click();await page.locator('#search').fill('Manzana');await page.getByRole('button',{name:'Añadir Manzana con piel'}).click();await page.getByRole('button',{name:'Confirmar selección',exact:true}).click();await page.getByRole('button',{name:'Guardar receta',exact:true}).click();await expect(page.getByRole('button',{name:'Añadir por gramos al diario'})).toHaveCount(0);await expect(page.getByRole('button',{name:'Añadir por raciones al diario'})).toBeVisible();
+});
