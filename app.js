@@ -1,7 +1,7 @@
 import {cloudConfig} from './cloud-config.js';
 import {CloudStore} from './cloud.js';
 const cloud=new CloudStore(cloudConfig);
-let connected=false,syncError=false,busy=false;
+let connected=false,syncError=false,lastCloudError='',busy=false;
 import {predictTargets,predictorMarkup} from './predictor.js';
 import {foods,totals,validBackup} from './data.js';
 const $=s=>document.querySelector(s), esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -16,7 +16,7 @@ async function save(){
  if(!cloud.configured){try{localStorage.setItem('mi-nutricion',JSON.stringify(state));return true;}catch{toast('No se pudo guardar. Exporta una copia de seguridad.');return false;}}
  busy=true;document.querySelector('.app').inert=true;$('#food-dialog').inert=true;
  try{if(!connected)throw Error('Inicia sesión.');await cloud.save(structuredClone(state));syncError=false;return true;}
- catch(error){syncError=true;$('#food-dialog').close();render();toast(error.message);return false;}
+ catch(error){syncError=true;lastCloudError=error.message;$('#food-dialog').close();render();toast(error.message);return false;}
  finally{busy=false;document.querySelector('.app').inert=false;$('#food-dialog').inert=false;}
 }
 function downloadState(data=state){const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download=`mi-nutricion-${today()}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
@@ -26,7 +26,7 @@ function renderGate(){
  if(connected&&!syncError)return false;
  $('#title').textContent='Tus datos privados';
  $('#content').innerHTML=syncError?`<div class="card"><h2>Guardado sin confirmar</h2><p>No cierres esta pestaña sin exportar los cambios pendientes. No se ha guardado una copia en el navegador. Si hay cambios de otro dispositivo debes recargar antes de editar.</p><button id="pending-export">Exportar cambios pendientes</button> <button id="cloud-reload">Recargar desde la base de datos</button><p id="cloud-error" role="alert"></p></div>`:`<div class="card"><h2>Inicia sesión</h2><p>Tu diario se guarda en una base de datos privada. Solo tu cuenta autorizada tiene acceso. Por privacidad, la sesión termina al recargar o cerrar la pestaña.</p><form id="login-form" class="fields"><label>Email<input type="email" name="email" required autocomplete="username"></label><label>Contraseña<input type="password" name="password" required autocomplete="current-password"></label><button class="primary">Entrar</button></form><p id="cloud-error" role="alert"></p><button id="legacy-export">Exportar datos locales antiguos</button></div>`;
- if(syncError){$('#pending-export').onclick=()=>downloadState();$('#cloud-reload').onclick=async()=>{if(!confirm('Se descartarán los cambios pendientes. ¿Has exportado una copia?'))return;try{await loadCloud();}catch(e){$('#cloud-error').textContent=e.message;}};}
+ if(syncError){$('#cloud-error').textContent=lastCloudError;$('#pending-export').onclick=()=>downloadState();$('#cloud-reload').onclick=async()=>{if(!confirm('Se descartarán los cambios pendientes. ¿Has exportado una copia?'))return;try{await loadCloud();}catch(e){$('#cloud-error').textContent=e.message;}};}
  else{$('#login-form').onsubmit=async e=>{e.preventDefault();const button=e.target.querySelector('button');button.disabled=true;const v=formValues(e.target);try{await cloud.login(v.email,v.password);e.target.reset();await loadCloud();}catch(error){$('#cloud-error').textContent=error.message;}finally{button.disabled=false;}};$('#legacy-export').onclick=()=>{try{const data=JSON.parse(localStorage.getItem('mi-nutricion'));if(!validBackup(data))throw Error();downloadState(data);}catch{toast('No se encontraron datos antiguos válidos.');}};}
  return true;
 }

@@ -8,3 +8,20 @@ test('sesión, versión de lectura y guardado confirmados por servidor',async()=
 });
 test('un conflicto no avanza revisión y nunca confirma un guardado',async()=>{const store=new CloudStore(config,async()=>new Response('{}',{status:409}));store.setSession({access_token:'test',expires_in:3600});store.revision=2;await assert.rejects(()=>store.save({}),/otro dispositivo/);assert.equal(store.revision,2);});
 test('cuenta distinta del propietario no carga estado vacío como autorizado',async()=>{const store=new CloudStore(config,async()=>new Response('[]'));store.setSession({access_token:'test',expires_in:3600});await assert.rejects(()=>store.load(),/propietaria/);});
+
+test('400 al entrar explica credenciales sin confundirlo con guardado',async()=>{
+ const store=new CloudStore(config,async()=>new Response(JSON.stringify({code:400,error_code:'invalid_credentials',message:'sensitive backend detail'}),{status:400}));
+ await assert.rejects(()=>store.login('user@example.org','test-only'),e=>e.message.includes('Email o contraseña incorrectos')&&!e.message.includes('guardado')&&!e.message.includes('sensitive'));
+});
+test('400 por email no confirmado muestra el paso concreto',async()=>{
+ const store=new CloudStore(config,async()=>new Response(JSON.stringify({code:'email_not_confirmed'}),{status:400}));
+ await assert.rejects(()=>store.login('user@example.org','test-only'),/email no está confirmado/);
+});
+test('errores RPC conservan contexto y código seguro sin exponer detalles SQL',async()=>{
+ const store=new CloudStore(config,async()=>new Response(JSON.stringify({code:'23514',details:'private data',message:'private SQL'}),{status:400}));store.setSession({access_token:'test',expires_in:3600});
+ await assert.rejects(()=>store.save({}),e=>e.message.includes('No se pudo guardar')&&e.message.includes('23514')&&!e.message.includes('private'));
+});
+test('respuestas no JSON no ocultan el estado HTTP',async()=>{
+ const store=new CloudStore(config,async()=>new Response('<html>private</html>',{status:400}));
+ await assert.rejects(()=>store.login('user@example.org','test-only'),e=>e.message.includes('HTTP 400')&&!e.message.includes('guardado')&&!e.message.includes('private'));
+});

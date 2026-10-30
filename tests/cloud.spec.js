@@ -27,3 +27,10 @@ test('migración confirmada conserva el original, fallo de red no muestra éxito
  const db=await setup(page,{legacy:true});await login(page);await expect(page.locator('#profile-form [name=name]')).toHaveValue('');page.once('dialog',d=>d.accept());await page.getByRole('button',{name:'Migrar datos antiguos del navegador'}).click();await expect(page.locator('#toast')).toHaveText('Migración confirmada por el servidor');expect(db.payload.profile.name).toBe('Antiguo');expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('mi-nutricion')).profile.name)).toBe('Antiguo');
  db.setFailure();await page.goto('/#hoy');await page.getByRole('button',{name:'Registrar comida'}).click();await page.locator('#search').fill('Avena');await page.getByRole('button',{name:'Añadir Avena en copos'}).click();await expect(page.locator('#food-dialog')).not.toBeVisible();await expect(page.getByRole('heading',{name:'Guardado sin confirmar'})).toBeVisible();expect(db.payload.entries).toHaveLength(0);
 });
+
+test('error de login 400 se explica sin sugerir que falló un guardado',async({page})=>{
+ await setup(page);
+ await page.route('https://test.supabase.co/auth/v1/token?*',r=>r.fulfill({status:400,headers:{'Access-Control-Allow-Origin':'*'},json:{code:400,error_code:'invalid_credentials',message:'Sensitive backend details'}}));
+ await page.goto('/');await page.locator('[name=email]').fill('user@example.org');await page.locator('[name=password]').fill('test-only');await page.getByRole('button',{name:'Entrar',exact:true}).click();
+ await expect(page.locator('#cloud-error')).toContainText('Email o contraseña incorrectos');await expect(page.locator('#cloud-error')).not.toContainText('guardado');await expect(page.getByRole('button',{name:'Entrar',exact:true})).toBeEnabled();
+});
