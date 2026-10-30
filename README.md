@@ -16,13 +16,16 @@ Subir los archivos a main y configurar Settings → Pages → Source: GitHub Act
 Si no aparece la opción Pages, revisa el mensaje de GitHub sobre visibilidad, plan o políticas de la organización. No hace falta crear ni compartir un token: la activación se hace desde Settings. `enablement: true` no sirve con el GITHUB_TOKEN habitual, según la documentación de configure-pages.
 
 ## Datos y límites
-Los registros se guardan en localStorage del navegador y no se sincronizan entre dispositivos. Exportar copias desde Mi perfil. No borrar almacenamiento sin copia. No hay autenticación: cualquier persona con acceso al perfil del navegador puede acceder a los datos.
+Con la configuración de Supabase, los registros se guardan en PostgreSQL y requieren la cuenta autorizada. La sesión y el estado de trabajo se mantienen solo en memoria. Al recargar debes iniciar sesión de nuevo. Exporta copias desde Mi perfil. Los datos locales de la versión anterior se conservan para una migración explícita; no se importan ni eliminan automáticamente.
 
 50 alimentos genéricos orientativos por 100 g; no son una biblioteca certificada USDA. Comprobar etiquetas y preparación. Se pueden crear alimentos propios y buscar productos de Open Food Facts con conexión (datos ODbL, https://world.openfoodfacts.org/data). Las llamadas pueden fallar por CORS, disponibilidad o límites del servicio. El catálogo local sigue funcionando. La integración online aún debe verificarse en un navegador con acceso a Internet.
 
-Los objetivos iniciales son ejemplos, no estimaciones personalizadas ni consejo médico. El ejercicio se registra sin restar calorías. No hay escáner de códigos, recetas ni sincronización todavía.
+Los objetivos iniciales son ejemplos, no estimaciones personalizadas ni consejo médico. El ejercicio se registra sin restar calorías. No hay escáner de códigos ni recetas todavía. Para ver cambios de otro dispositivo usa Actualizar; los conflictos de escritura exigen recargar.
 
 ## Estimación de objetivos
 Mi perfil → Calcula tus objetivos estima gasto en reposo con Mifflin–St Jeor y mantenimiento con actividad. Previsualiza calorías y macros y aplícalos explícitamente. Las fuentes y reglas prácticas están enlazadas en el calculador. No es una predicción clínica ni garantiza pérdida de peso; el ejercicio ya está incluido en la actividad. El porcentaje de grasa de báscula se registra en Evolución y calcula masa libre de grasa, sin modificar objetivos automáticamente.
 
 Fuentes de referencia: Mifflin et al. 1990 (PMID 2305711), revisión Frankenfield et al. 2005 (PMID 15883556), consenso ISSN proteína/ejercicio 2017 (PMC5477153). El acceso a los artículos fue bloqueado por la política de red durante esta implementación; no se realizó una revisión sistemática actualizada. Los factores de actividad, el ajuste energético y el reparto concreto de macros son decisiones explícitas de producto, no resultados directos de esos estudios.
+
+## Base de datos privada
+Integración Supabase configurada con URL del proyecto y clave pública. Sigue [database/README.md](database/README.md) y ejecuta el esquema SQL antes de conectar. En instalaciones sin URL y clave pública la app sigue en modo local, identificado explícitamente. Con Supabase configurado los registros y la sesión viven solo en memoria del navegador mientras la pestaña está abierta; los datos persistentes viven en PostgreSQL. No se borra ni migra automáticamente ningún dato local.

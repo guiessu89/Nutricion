@@ -1,4 +1,6 @@
 import {test,expect} from '@playwright/test';
+// Exercise the explicit legacy/local path independently of deployment configuration.
+test.beforeEach(async({page})=>{await page.route('**/cloud-config.js',r=>r.fulfill({contentType:'application/javascript',body:"export const cloudConfig={url:'',publicKey:''};"}));});
 test('registro de comida, persistencia, peso, actividad y perfil',async({page})=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto('/');await expect(page.locator('h1')).toHaveText('Tu día, a tu manera');
