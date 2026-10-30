@@ -27,7 +27,7 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Validar diario, copias de seguridad y móvil
         run: npm run test:ui
-      - run: mkdir -p /tmp/site && cp index.html app.js data.js predictor.js profile.js recipes.js planner.js suggestions.js fatsecret.js cloud.js cloud-config.js style.css /tmp/site/
+      - run: mkdir -p /tmp/site && cp index.html app.js data.js predictor.js profile.js recipes.js planner.js suggestions.js presets.js fatsecret.js cloud.js cloud-config.js style.css /tmp/site/
       - name: Comprobar configuración de GitHub Pages
         id: pages
         uses: actions/configure-pages@v5
