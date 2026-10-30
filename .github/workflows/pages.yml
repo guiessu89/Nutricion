@@ -23,6 +23,10 @@ jobs:
           node-version: '24'
       - run: npm ci
       - run: npm test
+      - name: Instalar Chromium para pruebas
+        run: npx playwright install --with-deps chromium
+      - name: Validar diario, copias de seguridad y móvil
+        run: npm run test:ui
       - run: mkdir -p /tmp/site && cp index.html app.js data.js style.css /tmp/site/
       - name: Comprobar configuración de GitHub Pages
         id: pages

@@ -2,10 +2,10 @@
 App personal en español, estática y sin dependencias de ejecución. Diario de alimentos y macros, objetivos editables, peso y medidas, ejercicio y copias JSON.
 
 ## Desarrollo
-Requiere Node 24 para pruebas y Python 3 para servidor local. Ejecutar `npm ci`, `npm test` y `npm start` desde este directorio. Para pruebas de interfaz: `npm run test:ui` con Chromium instalado en `/usr/bin/chromium` y el servidor arrancado. Abrir el puerto 5173 en el navegador durante desarrollo. Playwright es una dependencia de desarrollo. La aplicación no necesita claves.
+Requiere Node 24 para pruebas y Python 3 para servidor local. Ejecutar `npm ci`, `npm test` y `npm start` desde este directorio. Para pruebas de interfaz: `npm run test:ui` con Chromium instalado en `/usr/bin/chromium` o mediante `npx playwright install chromium`. Las pruebas arrancan su propio servidor si no hay uno activo. Abrir el puerto 5173 en el navegador durante desarrollo. Playwright es una dependencia de desarrollo. La aplicación no necesita claves.
 
 ## Publicación
-Subir los archivos a main y configurar Settings → Pages → Source: GitHub Actions. El workflow ejecuta pruebas y publica únicamente los cuatro archivos de la aplicación. El código está subido a main; la publicación depende de la configuración de Pages.
+Subir los archivos a main y configurar Settings → Pages → Source: GitHub Actions. El workflow ejecuta pruebas y publica únicamente los cuatro archivos de la aplicación. Publicación confirmada en GitHub Actions para el commit 39d3e81: https://guiessu89.github.io/Nutricion/. El workflow comprueba datos, copias de seguridad y navegación móvil antes de desplegar nuevas versiones.
 
 ### Si el despliegue falla con «Get Pages site failed / Not Found»
 1. Abre https://github.com/guiessu89/Nutricion/settings/pages con la cuenta propietaria.
