@@ -29,3 +29,6 @@ Fuentes de referencia: Mifflin et al. 1990 (PMID 2305711), revisión Frankenfiel
 
 ## Base de datos privada
 Integración Supabase configurada con URL del proyecto y clave pública. Sigue [database/README.md](database/README.md) y ejecuta el esquema SQL antes de conectar. En instalaciones sin URL y clave pública la app sigue en modo local, identificado explícitamente. Con Supabase configurado los registros y la sesión viven solo en memoria del navegador mientras la pestaña está abierta; los datos persistentes viven en PostgreSQL. No se borra ni migra automáticamente ningún dato local.
+
+## Ajuste vinculado de objetivos
+El déficit puede elegirse entre 5 y 25 % (máximo 500 kcal hasta 20 %, o 750 kcal por encima); el predictor mantiene los límites automáticos previos. Hay cinco niveles de actividad y un factor personalizado. Antes de aplicar o desde Datos y objetivos, editar calorías escala macros; editar un macro conserva calorías y reparte la energía restante entre los otros dos según sus proporciones, manteniendo al menos 1 g por macro. Se admiten décimas de gramo y una diferencia de redondeo de hasta 0,5 kcal. Los cambios solo se persisten al Aplicar o Guardar.

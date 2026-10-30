@@ -69,3 +69,24 @@ test('predictor previsualiza y aplica objetivos persistentes sin sobrescribirlos
 test('grasa corporal opcional conserva compatibilidad y calcula masa libre de grasa',async({page})=>{
  await page.goto('/#evolucion');await page.locator('[name=weight]').fill('80');await page.locator('[name=bodyFat]').fill('25');await page.getByRole('button',{name:'Guardar registro del día'}).click();await expect(page.getByRole('cell',{name:'25 %',exact:true})).toBeVisible();await expect(page.getByRole('cell',{name:'60.0 kg',exact:true})).toBeVisible();await page.reload();await expect(page.getByRole('cell',{name:'25 %',exact:true})).toBeVisible();
 });
+
+test('déficit agresivo y edición vinculada antes y después de aplicar',async({page})=>{
+ await page.goto('/#perfil');const f=page.locator('#predictor-form');
+ for(const [k,v] of Object.entries({weight:'80',height:'180',age:'30'}))await f.locator(`[name=${k}]`).fill(v);
+ await f.locator('[name=sex]').selectOption('male');await f.locator('[name=activity]').selectOption('custom');await f.locator('[name=activityFactor]').fill('1.55');
+ await f.locator('[name=objective]').selectOption('lose');await f.locator('[name=deficitPercent]').fill('25');await f.getByRole('button',{name:'Estimar objetivos'}).click();
+ const editor=page.locator('#target-preview');await expect(editor.locator('[name=goal]')).toHaveValue('2070');
+ const assertEnergy=async form=>{const v=await form.evaluate(f=>Object.fromEntries(['goal','protein','carbs','fat'].map(k=>[k,Number(f.elements[k].value)])));expect(Math.abs(v.goal-v.protein*4-v.carbs*4-v.fat*9)).toBeLessThanOrEqual(.5);return v;};
+ await editor.locator('[name=goal]').fill('2000');await assertEnergy(editor);
+ await editor.locator('[name=protein]').fill('160');await expect(editor.locator('[name=goal]')).toHaveValue('2000');await assertEnergy(editor);
+ await editor.locator('[name=fat]').fill('60');await assertEnergy(editor);
+ await page.getByRole('button',{name:'Aplicar estos objetivos'}).click();
+ const profile=page.locator('#profile-form');await expect(profile.locator('[name=goal]')).toHaveValue('2000');await expect(profile.locator('[name=fat]')).toHaveValue('60');
+ await profile.locator('[name=carbs]').fill('200');await expect(profile.locator('[name=goal]')).toHaveValue('2000');await assertEnergy(profile);
+ await profile.getByRole('button',{name:'Guardar perfil'}).click();await page.reload();await expect(page.locator('#profile-form [name=carbs]')).toHaveValue('200');
+});
+
+test('macro imposible no se aplica ni se guarda',async({page})=>{
+ await page.goto('/#perfil');const f=page.locator('#profile-form');await f.locator('[name=protein]').fill('600');
+ await expect(f.locator('.target-status')).toContainText('no cabe');await f.getByRole('button',{name:'Guardar perfil'}).click();await page.reload();await expect(page.locator('#profile-form [name=protein]')).toHaveValue('120');
+});
