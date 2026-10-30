@@ -1,0 +1,5 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {predictTargets} from './predictor.js';
+const input={weight:80,height:180,age:30,sex:'male',activity:'moderate',objective:'maintain'};
+test('Mifflin conocido y energía de macros coherente',()=>{const r=predictTargets(input);assert.equal(r.resting,1780);assert.equal(r.maintenance,2759);assert.equal(r.goal,2760);assert.equal(r.protein,128);assert.ok(Math.abs(4*r.protein+4*r.carbs+9*r.fat-r.goal)<=2);assert.equal(predictTargets({...input,sex:'female'}).resting,1614);});
+test('déficit y superávit acotados',()=>{const r=predictTargets({...input,objective:'lose'});assert.equal(r.adjustment,-414);assert.equal(r.goal,2350);assert.equal(r.protein,144);assert.equal(predictTargets({...input,objective:'gain'}).adjustment,276);});
+test('rechaza datos inválidos y casos excluidos',()=>{for(const change of [{age:17},{weight:NaN},{activity:'unknown'},{objective:'x'},{sex:''},{excluded:true},{weight:50,height:180,objective:'lose'}])assert.throws(()=>predictTargets({...input,...change}));});

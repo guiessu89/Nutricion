@@ -21,3 +21,8 @@ Los registros se guardan en localStorage del navegador y no se sincronizan entre
 50 alimentos genéricos orientativos por 100 g; no son una biblioteca certificada USDA. Comprobar etiquetas y preparación. Se pueden crear alimentos propios y buscar productos de Open Food Facts con conexión (datos ODbL, https://world.openfoodfacts.org/data). Las llamadas pueden fallar por CORS, disponibilidad o límites del servicio. El catálogo local sigue funcionando. La integración online aún debe verificarse en un navegador con acceso a Internet.
 
 Los objetivos iniciales son ejemplos, no estimaciones personalizadas ni consejo médico. El ejercicio se registra sin restar calorías. No hay escáner de códigos, recetas ni sincronización todavía.
+
+## Estimación de objetivos
+Mi perfil → Calcula tus objetivos estima gasto en reposo con Mifflin–St Jeor y mantenimiento con actividad. Previsualiza calorías y macros y aplícalos explícitamente. Las fuentes y reglas prácticas están enlazadas en el calculador. No es una predicción clínica ni garantiza pérdida de peso; el ejercicio ya está incluido en la actividad. El porcentaje de grasa de báscula se registra en Evolución y calcula masa libre de grasa, sin modificar objetivos automáticamente.
+
+Fuentes de referencia: Mifflin et al. 1990 (PMID 2305711), revisión Frankenfield et al. 2005 (PMID 15883556), consenso ISSN proteína/ejercicio 2017 (PMC5477153). El acceso a los artículos fue bloqueado por la política de red durante esta implementación; no se realizó una revisión sistemática actualizada. Los factores de actividad, el ajuste energético y el reparto concreto de macros son decisiones explícitas de producto, no resultados directos de esos estudios.

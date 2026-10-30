@@ -53,3 +53,17 @@ test('elegir cena desde el registro rápido y consultar todas las medidas',async
  for(const name of ['Pecho','Brazo','Muslo'])await expect(page.getByRole('columnheader',{name})).toBeVisible();
  for(const value of ['95','32','54'])await expect(page.getByRole('cell',{name:value,exact:true})).toBeVisible();
 });
+
+test('predictor previsualiza y aplica objetivos persistentes sin sobrescribirlos al estimar',async({page})=>{
+ await page.goto('/#perfil');const f=page.locator('#predictor-form');
+ await f.locator('[name=weight]').fill('80');await f.locator('[name=height]').fill('180');await f.locator('[name=age]').fill('30');await f.locator('[name=sex]').selectOption('male');await f.locator('[name=activity]').selectOption('moderate');
+ await f.getByRole('button',{name:'Estimar objetivos'}).click();await expect(page.locator('#prediction')).toContainText('2760 kcal/día');
+ await expect(page.locator('#profile-form [name=goal]')).toHaveValue('2000');
+ await page.getByRole('button',{name:'Aplicar estos objetivos'}).click();await page.reload();await expect(page.locator('#profile-form [name=goal]')).toHaveValue('2760');
+ await page.getByRole('button',{name:'Guardar perfil'}).click();await page.reload();await expect(page.locator('#predictor-form [name=sex]')).toHaveValue('male');
+ await page.locator('#predictor-form [name=excluded]').check();await page.getByRole('button',{name:'Estimar objetivos'}).click();await expect(page.locator('#prediction')).toContainText('profesional');await expect(page.locator('#apply-prediction')).toHaveCount(0);
+});
+
+test('grasa corporal opcional conserva compatibilidad y calcula masa libre de grasa',async({page})=>{
+ await page.goto('/#evolucion');await page.locator('[name=weight]').fill('80');await page.locator('[name=bodyFat]').fill('25');await page.getByRole('button',{name:'Guardar registro del día'}).click();await expect(page.getByRole('cell',{name:'25 %',exact:true})).toBeVisible();await expect(page.getByRole('cell',{name:'60.0 kg',exact:true})).toBeVisible();await page.reload();await expect(page.getByRole('cell',{name:'25 %',exact:true})).toBeVisible();
+});
