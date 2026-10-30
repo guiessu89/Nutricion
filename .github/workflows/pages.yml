@@ -17,14 +17,20 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: '24'
       - run: npm ci
       - run: npm test
       - run: mkdir -p /tmp/site && cp index.html app.js data.js style.css /tmp/site/
-      - uses: actions/configure-pages@v5
+      - name: Comprobar configuración de GitHub Pages
+        id: pages
+        uses: actions/configure-pages@v5
+      - name: Explicar cómo activar Pages
+        if: failure() && steps.pages.outcome == 'failure'
+        run: |
+          echo "::error::No se pudo configurar Pages. Revisa Settings > Pages > Build and deployment > Source: GitHub Actions. Habilitar Actions no activa Pages. Consulta el error del paso anterior para distinguir configuración y permisos."
       - uses: actions/upload-pages-artifact@v3
         with:
           path: /tmp/site

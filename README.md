@@ -5,7 +5,15 @@ App personal en español, estática y sin dependencias de ejecución. Diario de 
 Requiere Node 24 para pruebas y Python 3 para servidor local. Ejecutar `npm ci`, `npm test` y `npm start` desde este directorio. Para pruebas de interfaz: `npm run test:ui` con Chromium instalado en `/usr/bin/chromium` y el servidor arrancado. Abrir el puerto 5173 en el navegador durante desarrollo. Playwright es una dependencia de desarrollo. La aplicación no necesita claves.
 
 ## Publicación
-Subir los archivos a main y configurar Settings → Pages → Source: GitHub Actions. El workflow ejecuta pruebas y publica únicamente los cuatro archivos de la aplicación. No se ha publicado desde este entorno.
+Subir los archivos a main y configurar Settings → Pages → Source: GitHub Actions. El workflow ejecuta pruebas y publica únicamente los cuatro archivos de la aplicación. El código está subido a main; la publicación depende de la configuración de Pages.
+
+### Si el despliegue falla con «Get Pages site failed / Not Found»
+1. Abre https://github.com/guiessu89/Nutricion/settings/pages con la cuenta propietaria.
+2. En **Build and deployment → Source**, selecciona **GitHub Actions**. Activar Actions en otra pantalla no activa Pages.
+3. En **Actions → Publicar en GitHub Pages**, ejecuta **Run workflow** sobre **main**. Volver a ejecutar un run antiguo usa su versión antigua del workflow.
+4. Comprueba que `deploy` termina en verde; entonces abre la URL indicada por GitHub en el resultado.
+
+Si no aparece la opción Pages, revisa el mensaje de GitHub sobre visibilidad, plan o políticas de la organización. No hace falta crear ni compartir un token: la activación se hace desde Settings. `enablement: true` no sirve con el GITHUB_TOKEN habitual, según la documentación de configure-pages.
 
 ## Datos y límites
 Los registros se guardan en localStorage del navegador y no se sincronizan entre dispositivos. Exportar copias desde Mi perfil. No borrar almacenamiento sin copia. No hay autenticación: cualquier persona con acceso al perfil del navegador puede acceder a los datos.
