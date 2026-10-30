@@ -74,7 +74,7 @@ test('déficit agresivo y edición vinculada antes y después de aplicar',async(
  await page.goto('/#perfil');const f=page.locator('#predictor-form');
  for(const [k,v] of Object.entries({weight:'80',height:'180',age:'30'}))await f.locator(`[name=${k}]`).fill(v);
  await f.locator('[name=sex]').selectOption('male');await f.locator('[name=activity]').selectOption('custom');await f.locator('[name=activityFactor]').fill('1.55');
- await f.locator('[name=objective]').selectOption('lose');await f.locator('[name=deficitPercent]').fill('25');await f.getByRole('button',{name:'Estimar objetivos'}).click();
+ await f.locator('[name=objective]').selectOption('lose');await f.locator('[name=lossMode]').selectOption('deficit');await f.locator('[name=deficitPercent]').fill('25');await f.getByRole('button',{name:'Estimar objetivos'}).click();
  const editor=page.locator('#target-preview');await expect(editor.locator('[name=goal]')).toHaveValue('2070');
  const assertEnergy=async form=>{const v=await form.evaluate(f=>Object.fromEntries(['goal','protein','carbs','fat'].map(k=>[k,Number(f.elements[k].value)])));expect(Math.abs(v.goal-v.protein*4-v.carbs*4-v.fat*9)).toBeLessThanOrEqual(.5);return v;};
  await editor.locator('[name=goal]').fill('2000');await assertEnergy(editor);
@@ -89,4 +89,19 @@ test('déficit agresivo y edición vinculada antes y después de aplicar',async(
 test('macro imposible no se aplica ni se guarda',async({page})=>{
  await page.goto('/#perfil');const f=page.locator('#profile-form');await f.locator('[name=protein]').fill('600');
  await expect(f.locator('.target-status')).toContainText('no cabe');await f.getByRole('button',{name:'Guardar perfil'}).click();await page.reload();await expect(page.locator('#profile-form [name=protein]')).toHaveValue('120');
+});
+
+test('peso objetivo y ritmos calculan plazo que cambia con calorías y se conserva',async({page})=>{
+ await page.goto('/#perfil');const f=page.locator('#predictor-form');
+ for(const [k,v] of Object.entries({weight:'80',height:'180',age:'30'}))await f.locator(`[name=${k}]`).fill(v);
+ await f.locator('[name=sex]').selectOption('male');await f.locator('[name=activity]').selectOption('moderate');await f.locator('[name=objective]').selectOption('lose');
+ await expect(f.locator('[name=targetWeight]')).toBeVisible();await expect(f.locator('[name=deficitPercent]')).not.toBeVisible();
+ await f.locator('[name=targetWeight]').fill('70');await f.locator('[name=pace]').selectOption('moderate');await f.getByRole('button',{name:'Estimar objetivos'}).click();
+ const slow=Number(await page.locator('#target-preview [name=goal]').inputValue());const slowTimeline=await page.locator('#preview-timeline').textContent();
+ await f.locator('[name=pace]').selectOption('fast');await f.getByRole('button',{name:'Estimar objetivos'}).click();
+ const fast=Number(await page.locator('#target-preview [name=goal]').inputValue());expect(fast).toBeLessThan(slow);await expect(page.locator('#preview-timeline')).toContainText('80 → 70 kg');expect(await page.locator('#preview-timeline').textContent()).not.toBe(slowTimeline);
+ await page.locator('#target-preview [name=goal]').fill('2760');await expect(page.locator('#preview-timeline')).toContainText('no se prevé alcanzar');
+ await page.locator('#target-preview [name=goal]').fill(String(fast));await page.getByRole('button',{name:'Aplicar estos objetivos'}).click();await page.reload();
+ await expect(page.locator('#predictor-form [name=targetWeight]')).toHaveValue('70');await expect(page.locator('#predictor-form [name=pace]')).toHaveValue('fast');await expect(page.locator('#profile-timeline')).toContainText('80 → 70 kg');
+ const before=await page.locator('#profile-timeline').textContent();await page.locator('#profile-form [name=goal]').fill(String(fast+100));expect(await page.locator('#profile-timeline').textContent()).not.toBe(before);
 });

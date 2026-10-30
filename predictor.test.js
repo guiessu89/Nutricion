@@ -26,3 +26,20 @@ test('ediciones sucesivas no acumulan desajustes energéticos',()=>{
  let t={goal:2400,protein:150,carbs:300,fat:66.7};
  for(let i=0;i<100;i++){t=balanceTargets(t,'goal',1800+(i%5)*100);t=balanceTargets(t,'protein',120+i%30);t=balanceTargets(t,'fat',50+i%10);assert.ok(Math.abs(energy(t)-t.goal)<=.5);assert.ok(t.carbs>=1);}
 });
+
+import {estimateWeightTimeline} from './predictor.js';
+const weightPlan={...input,objective:'lose',lossMode:'weight',targetWeight:70,pace:'medium'};
+test('peso objetivo y ritmo ordenan calorías y plazos',()=>{
+ const slow=predictTargets({...weightPlan,pace:'moderate'}),medium=predictTargets(weightPlan),fast=predictTargets({...weightPlan,pace:'fast'});
+ assert.ok(slow.goal>medium.goal&&medium.goal>fast.goal);
+ const a=estimateWeightTimeline(slow),b=estimateWeightTimeline(medium),c=estimateWeightTimeline(fast);
+ assert.ok(a.weeks>b.weeks&&b.weeks>c.weeks);assert.equal(b.kgToLose,10);
+ // Falling TDEE must make the estimate longer than a constant-deficit calculation.
+ assert.ok(b.days>7700*10/(medium.maintenance-medium.goal));
+ const longer=estimateWeightTimeline(medium,medium.goal+100);assert.ok(longer.weeks>b.weeks);
+ assert.equal(estimateWeightTimeline(medium,medium.maintenance).weeks,null);
+ assert.equal(estimateWeightTimeline(predictTargets(input)),null);
+});
+test('peso objetivo inválido y ritmo desconocido no generan plan',()=>{
+ for(const change of [{targetWeight:80},{targetWeight:85},{targetWeight:40},{targetWeight:NaN},{pace:'extreme'}])assert.throws(()=>predictTargets({...weightPlan,...change}));
+});
