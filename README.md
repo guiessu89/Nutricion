@@ -63,3 +63,8 @@ El calendario utiliza una tabla única con los siete días en columnas y las cua
 
 ## Navegación del diario
 La vista principal y su enlace se llaman Diario, conservando #hoy para enlaces existentes. La cabecera muestra la fecha consultada, permite avanzar o retroceder un día y tiene un botón Hoy para volver a la fecha local actual. Flechas, selector y texto de fecha se actualizan juntos, incluidos cambios de mes/año. Navegar no modifica registros. Los controles diarios solo aparecen en Diario; el selector de fecha sigue disponible en las otras vistas.
+
+## Historial RENPHO
+Evolución → Importar historial RENPHO admite el CSV con peso en kg. Hay vista previa y confirmación antes del guardado privado. Se conservan fecha y hora local tal como aparecen en el archivo, todas las mediciones de un mismo día y los valores adicionales de composición corporal. No se infiere una zona horaria. Los campos `--` se mantienen como desconocidos, no como cero. La deduplicación compara fecha, hora y medidas originales; una corrección de valores cuenta como otro registro. Los datos y estimaciones del dispositivo no modifican automáticamente los objetivos.
+
+El gráfico utiliza una referencia por día (manual si existe, en su defecto la última medición importada), mostrando todo el periodo con distancias temporales proporcionales. El historial conserva todas las medidas. Añadir un peso manual no borra el historial RENPHO; eliminar una medida importada solo elimina esa medida. Los CSV personales permanecen fuera del repositorio y los tests usan datos sintéticos.
