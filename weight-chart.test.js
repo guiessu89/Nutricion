@@ -1,0 +1,4 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {weightChartModel} from './weight-chart.js';
+const weights=[{date:'2026-01-01',weight:80},{date:'2026-01-03',weight:78},{date:'2026-01-11',weight:70}];
+test('regresión usa tiempo real y escala incluye objetivo',()=>{const m=weightChartModel(weights,'','',65);assert.equal(m.points.length,3);assert.equal(m.trend[0].weight,80);assert.equal(m.trend[1].weight,70);assert.ok(m.min<65);assert.ok(m.max>80);});
+test('filtrar cambia último punto y tendencia sin modificar historial',()=>{const m=weightChartModel(weights,'2026-01-01','2026-01-03',75);assert.equal(m.points.at(-1).weight,78);assert.equal(m.points.length,2);assert.equal(weights.length,3);assert.equal(weightChartModel(weights,'2027-01-01','2027-02-01').points.length,0);assert.throws(()=>weightChartModel(weights,'2026-02-01','2026-01-01'));assert.equal(weightChartModel(weights,'2026-01-01','2026-01-01').trend.length,0);});

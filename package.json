@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "python3 -m http.server 5173",
-    "test": "node --test data.test.js predictor.test.js cloud.test.js profile.test.js fatsecret.test.js recipes.test.js planner.test.js suggestions.test.js presets.test.js renpho.test.js",
+    "test": "node --test data.test.js predictor.test.js cloud.test.js profile.test.js fatsecret.test.js recipes.test.js planner.test.js suggestions.test.js presets.test.js renpho.test.js weight-chart.test.js",
     "test:ui": "playwright test"
   },
   "devDependencies": {
