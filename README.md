@@ -86,3 +86,10 @@ Se propone el último peso diario anterior o igual a la fecha consultada, con al
 
 ## Resumen compacto del diario
 La cabecera del diario agrupa calorías y macros en una única tarjeta con estados, porcentajes y barras pequeñas. El diario de comidas es el siguiente bloque; actividad y seguimiento quedan después. Los botones para registrar comida y actividad, y el gasto extra orientativo, permanecen en el resumen. En móvil los tres macros comparten una fila; se conserva el detalle numérico completo en Alimentación.
+
+## Navegación, instalación y consulta de pesos
+La navegación empieza contraída en iconos vectoriales: barra lateral de 72 px en escritorio y una fila compacta en móvil. El botón de menú permite mostrar los nombres sin cambiar la vista ni los datos. La preferencia dura solo durante la página abierta. Los enlaces mantienen nombres accesibles, título y estado activo.
+
+El resumen diario queda blanco cuando no hay consumo o cuando todos sus nutrientes suman cero. Los puntos del gráfico muestran fecha y peso mediante ratón, foco de teclado o toque; el toque fija el detalle hasta tocar fuera, cambiar de punto/rango o pulsar Escape. Se conserva la referencia de una medida diaria.
+
+`manifest.webmanifest`, los PNG de 192/512 px, el icono Apple de 180 px y el favicon SVG utilizan rutas relativas para GitHub Pages. El diseño vectorial original se conserva en `icons/icon.svg`. La app puede añadirse a la pantalla de inicio con su icono; un acceso ya creado puede requerir eliminarlo y añadirlo de nuevo para actualizarlo. No se añade un modo sin conexión ni una caché de registros privados. Las pruebas comprueban metadatos e imágenes mediante HTTP; no simulan la instalación en un dispositivo físico.
