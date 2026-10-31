@@ -60,3 +60,6 @@ Desde cada comida del diario con alimentos registrados, Guardar preset conserva 
 
 ## Vista semanal unificada
 El calendario utiliza una tabla única con los siete días en columnas y las cuatro comidas en filas. Muestra el total de calorías de cada día y comida, identifica la fecha seleccionada y mantiene navegación y copia de semanas en una barra común. Las cantidades y el estado pendiente/registrado permanecen junto a cada alimento. En móvil el desplazamiento horizontal se limita a la tabla y la columna de comidas permanece fija. Seleccionar una cabecera cambia la fecha activa del diario, conservando el desplazamiento de la tabla.
+
+## Navegación del diario
+La vista principal y su enlace se llaman Diario, conservando #hoy para enlaces existentes. La cabecera muestra la fecha consultada, permite avanzar o retroceder un día y tiene un botón Hoy para volver a la fecha local actual. Flechas, selector y texto de fecha se actualizan juntos, incluidos cambios de mes/año. Navegar no modifica registros. Los controles diarios solo aparecen en Diario; el selector de fecha sigue disponible en las otras vistas.
