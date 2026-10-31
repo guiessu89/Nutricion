@@ -42,3 +42,5 @@ aside{top:0;width:72px;padding:20px 10px;z-index:10}.nav-head{display:flex;flex-
 .weight-plot{position:relative}.weight-tooltip{position:absolute;z-index:3;max-width:190px;padding:9px 12px;background:#204e43;color:#fff;box-shadow:0 3px 10px #173c3226;border-radius:8px;font-size:12px;white-space:nowrap;pointer-events:none}.weight-hit{fill:transparent;cursor:pointer;outline:none}.weight-hit:focus,.weight-hit[aria-pressed="true"]{stroke:#204e43;stroke-width:2;fill:#204e4315}
 
 .nav-icon svg,#nav-toggle svg{display:block}.weight-chart-svg.has-tooltip .last-weight-box,.weight-chart-svg.has-tooltip [data-last-weight]{visibility:hidden}
+
+.calendar-table .calendar-day-status.status-low{background:#faf3e5}.calendar-table .calendar-day-status.status-ok{background:#edf5ec}.calendar-table .calendar-day-status.status-high{background:#fbefec}.calendar-table .calendar-day-status.status-none{background:#fff}.calendar-day-status .nutrition-badge{margin-top:7px}.calendar-table [data-activity-date]{display:grid;gap:8px;margin-top:10px}.calendar-table [data-activity-date] button,.calendar-table [data-complete-activity]{font-size:10px;padding:7px}
