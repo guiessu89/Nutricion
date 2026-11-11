@@ -37,6 +37,34 @@ export function setupScanner({onFood,onMessage}){
  const preview=document.getElementById('scanner-preview');
  const photoStatus=document.getElementById('scanner-photo-status');
  const video=document.getElementById('scanner-video');
+ const cropArea=document.getElementById('scanner-crop-area'),cropStage=document.getElementById('scanner-crop-stage'),cropImage=document.getElementById('scanner-crop-image'),cropSelection=document.getElementById('scanner-crop-selection');
+ let selectedImage=null,selection=null,dragStart=null;
+ const clamp=(n,min,max)=>Math.max(min,Math.min(max,n));
+ const position=e=>{const r=cropImage.getBoundingClientRect();return {x:clamp((e.clientX-r.left)/r.width,0,1),y:clamp((e.clientY-r.top)/r.height,0,1)};};
+ const drawSelection=()=>{
+  if(!selection){cropSelection.hidden=true;return;}
+  cropSelection.hidden=false;
+  Object.assign(cropSelection.style,{left:(selection.x*100)+'%',top:(selection.y*100)+'%',width:(selection.w*100)+'%',height:(selection.h*100)+'%'});
+ };
+ cropStage.addEventListener('pointerdown',e=>{if(!selectedImage||busy)return;dragStart=position(e);selection=null;cropStage.setPointerCapture(e.pointerId);e.preventDefault();});
+ cropStage.addEventListener('pointermove',e=>{if(!dragStart)return;const p=position(e);selection={x:Math.min(dragStart.x,p.x),y:Math.min(dragStart.y,p.y),w:Math.abs(p.x-dragStart.x),h:Math.abs(p.y-dragStart.y)};drawSelection();e.preventDefault();});
+ const endDrag=()=>{dragStart=null;if(selection&&(selection.w<.015||selection.h<.015)){selection=null;drawSelection();}};
+ cropStage.addEventListener('pointerup',endDrag);cropStage.addEventListener('pointercancel',endDrag);
+ const cropFile=async()=>{
+  if(!selection||selection.w<.015||selection.h<.015)throw Error('Selecciona primero la zona de la etiqueta arrastrando el dedo.');
+  const bitmap=await createImageBitmap(selectedImage,{imageOrientation:'from-image'});
+  try{
+   const sx=Math.round(selection.x*bitmap.width),sy=Math.round(selection.y*bitmap.height);
+   const sw=Math.max(1,Math.round(selection.w*bitmap.width)),sh=Math.max(1,Math.round(selection.h*bitmap.height));
+   const scale=Math.min(3,Math.max(1,1600/Math.max(sw,sh)));
+   const canvas=document.createElement('canvas');canvas.width=Math.round(sw*scale);canvas.height=Math.round(sh*scale);
+   const ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(bitmap,sx,sy,sw,sh,0,0,canvas.width,canvas.height);
+   return canvas;
+  }finally{bitmap.close();}
+ };
+ document.getElementById('scanner-crop-apply').onclick=async()=>{if(busy)return;try{const canvas=await cropFile();await recognize(canvas);}catch(error){say(error.message);}};
+ document.getElementById('scanner-crop-full').onclick=()=>{if(!busy&&selectedImage)recognize(selectedImage);};
+
  const say=t=>{status.textContent=t;onMessage?.(t);};
  const stop=()=>{cancelAnimationFrame(frame);frame=0;stream?.getTracks().forEach(t=>t.stop());stream=null;video.srcObject=null;};
  const populate=food=>{for(const k of ['name','kcal','p','c','f'])form.elements[k].value=food[k]??'';};
@@ -67,28 +95,38 @@ export function setupScanner({onFood,onMessage}){
  }
  document.getElementById('scan-open').onclick=()=>{dialog.showModal();say('Escanea un código o fotografía la tabla nutricional.');};
  document.getElementById('scan-close').onclick=()=>dialog.close();
- dialog.addEventListener('close',()=>{stop();if(previewURL){URL.revokeObjectURL(previewURL);previewURL=null;}preview.hidden=true;photoStatus.hidden=true;});
+ dialog.addEventListener('close',()=>{selectedImage=null;selection=null;dragStart=null;cropArea.hidden=true;cropImage.removeAttribute('src');drawSelection();stop();if(previewURL){URL.revokeObjectURL(previewURL);previewURL=null;}preview.hidden=true;photoStatus.hidden=true;});
  document.getElementById('scanner-start').onclick=start;
  document.getElementById('scanner-lookup').onclick=()=>{const code=document.getElementById('scanner-code').value.trim();if(!/^\d{8,14}$/.test(code)){say('Introduce un código de 8 a 14 cifras.');return;}stop();lookup(code);};
- const processImage=async image=>{
-  if(!image||busy)return;
-  busy=true;stop();
-  if(previewURL)URL.revokeObjectURL(previewURL);
-  previewURL=URL.createObjectURL(image);preview.src=previewURL;preview.hidden=false;
-  photoStatus.hidden=false;photoStatus.textContent='Imagen seleccionada: '+image.name+' ('+Math.round(image.size/1024)+' KB)';
-  say('Imagen cargada. Preparando reconocimiento OCR…');
+ const recognize=async source=>{
+  if(!source||busy)return;
+  busy=true;cropArea.hidden=true;say('Preparando reconocimiento OCR…');
   try{
    if(!window.Tesseract){
     await new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';script.onload=resolve;script.onerror=()=>reject(Error('No se pudo cargar el motor OCR. Revisa la conexión.'));document.head.append(script);});
    }
-   say('Motor OCR cargado. Leyendo etiqueta, espera unos segundos…');
+   say('Leyendo la etiqueta. Puede tardar unos segundos…');
    const worker=await window.Tesseract.createWorker('spa+eng');
    let text='';
-   try{({data:{text}}=await worker.recognize(image));}finally{await worker.terminate();}
-   if(!text.trim())throw Error('No se detectó texto legible. Prueba con una foto más cercana y nítida.');
-   const parsed=parseNutrition(text);populate({...Object.fromEntries(new FormData(form)),...Object.fromEntries(Object.entries(parsed).filter(([,v])=>v!==null))});
-   say(Object.values(parsed).some(v=>v!==null)?'Valores detectados: '+Object.entries(parsed).filter(([,v])=>v!==null).map(([k,v])=>k+': '+v).join(', ')+'. Revisa los datos por 100 g.':'Se leyó texto, pero no se pudieron identificar valores nutricionales. Introdúcelos manualmente o prueba otra foto.');
-  }catch(error){say('OCR no disponible: '+error.message);}finally{file.value='';gallery.value='';busy=false;}
+   try{({data:{text}}=await worker.recognize(source));}finally{await worker.terminate();}
+   if(!text.trim())throw Error('No se detectó texto legible. Prueba con una selección más nítida.');
+   const parsed=parseNutrition(text);
+   populate({...Object.fromEntries(new FormData(form)),...Object.fromEntries(Object.entries(parsed).filter(([,v])=>v!==null))});
+   const detected=Object.entries(parsed).filter(([,v])=>v!==null);
+   say(detected.length?'Valores detectados: '+detected.map(([k,v])=>k+': '+v).join(', ')+'. Comprueba los valores por 100 g.':'Se reconoció texto pero no los valores. Prueba otro recorte o introdúcelos manualmente.');
+  }catch(error){say('Error de reconocimiento: '+error.message);}
+  finally{busy=false;cropArea.hidden=false;}
+ };
+ const processImage=async image=>{
+  if(!image||busy)return;
+  stop();selectedImage=image;selection=null;dragStart=null;drawSelection();
+  if(previewURL)URL.revokeObjectURL(previewURL);
+  previewURL=URL.createObjectURL(image);
+  preview.src=previewURL;preview.hidden=true;
+  cropImage.src=previewURL;cropArea.hidden=false;
+  photoStatus.hidden=false;photoStatus.textContent='Imagen seleccionada: '+image.name+' ('+Math.round(image.size/1024)+' KB)';
+  say('Arrastra el dedo para seleccionar la tabla nutricional y pulsa «Leer selección».');
+  file.value='';gallery.value='';
  };
  file.onchange=()=>processImage(file.files?.[0]);
  gallery.onchange=()=>processImage(gallery.files?.[0]);
