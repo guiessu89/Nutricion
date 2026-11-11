@@ -1,5 +1,5 @@
 // Browser-only scanner. Photos are processed locally; barcode lookup uses Open Food Facts.
-const number = value => { const n=Number(String(value??'').replace(/\s/g,'').replace(',','.')); return Number.isFinite(n)&&n>=0?n:null; };
+const number = value => { if(value===null||value===undefined||String(value).trim()==='')return null; const n=Number(String(value??'').replace(/\s/g,'').replace(',','.')); return Number.isFinite(n)&&n>=0?n:null; };
 export function parseNutrition(text){
  const lines=String(text).split(/\n/).map(x=>x.trim()).filter(Boolean);
  const find=(patterns,max)=>{for(const line of lines){if(!patterns.some(p=>p.test(line)))continue;const m=line.match(/(?:^|\s|:)\s*(\d{1,4}(?:[.,]\d{1,2})?)\s*(?:g|kcal)?\b/i);if(m){const n=number(m[1]);if(n!==null&&n<=max)return n;}}return null;};
@@ -16,7 +16,9 @@ export function barcodeProduct(product){
 }
 export function setupScanner({onFood,onMessage}){
  const dialog=document.getElementById('scanner-dialog'),file=document.getElementById('scanner-photo'),gallery=document.getElementById('scanner-gallery'),status=document.getElementById('scanner-status'),form=document.getElementById('scanner-form');
- let stream=null,detector=null,frame=0;
+ let stream=null,detector=null,frame=0,busy=false,previewURL=null;
+ const preview=document.getElementById('scanner-preview');
+ const photoStatus=document.getElementById('scanner-photo-status');
  const video=document.getElementById('scanner-video');
  const say=t=>{status.textContent=t;onMessage?.(t);};
  const stop=()=>{cancelAnimationFrame(frame);frame=0;stream?.getTracks().forEach(t=>t.stop());stream=null;video.srcObject=null;};
@@ -48,22 +50,28 @@ export function setupScanner({onFood,onMessage}){
  }
  document.getElementById('scan-open').onclick=()=>{dialog.showModal();say('Escanea un código o fotografía la tabla nutricional.');};
  document.getElementById('scan-close').onclick=()=>dialog.close();
- dialog.addEventListener('close',stop);
+ dialog.addEventListener('close',()=>{stop();if(previewURL){URL.revokeObjectURL(previewURL);previewURL=null;}preview.hidden=true;photoStatus.hidden=true;});
  document.getElementById('scanner-start').onclick=start;
  document.getElementById('scanner-lookup').onclick=()=>{const code=document.getElementById('scanner-code').value.trim();if(!/^\d{8,14}$/.test(code)){say('Introduce un código de 8 a 14 cifras.');return;}stop();lookup(code);};
  const processImage=async image=>{
-  if(!image)return;
-  stop();say('Reconociendo texto en el dispositivo…');
+  if(!image||busy)return;
+  busy=true;stop();
+  if(previewURL)URL.revokeObjectURL(previewURL);
+  previewURL=URL.createObjectURL(image);preview.src=previewURL;preview.hidden=false;
+  photoStatus.hidden=false;photoStatus.textContent='Imagen seleccionada: '+image.name+' ('+Math.round(image.size/1024)+' KB)';
+  say('Imagen cargada. Preparando reconocimiento OCR…');
   try{
    if(!window.Tesseract){
     await new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';script.onload=resolve;script.onerror=()=>reject(Error('No se pudo cargar el motor OCR. Revisa la conexión.'));document.head.append(script);});
    }
+   say('Motor OCR cargado. Leyendo etiqueta, espera unos segundos…');
    const worker=await window.Tesseract.createWorker('spa+eng');
    let text='';
    try{({data:{text}}=await worker.recognize(image));}finally{await worker.terminate();}
+   if(!text.trim())throw Error('No se detectó texto legible. Prueba con una foto más cercana y nítida.');
    const parsed=parseNutrition(text);populate({...Object.fromEntries(new FormData(form)),...Object.fromEntries(Object.entries(parsed).filter(([,v])=>v!==null))});
-   say('Texto reconocido. Revisa los valores y asegúrate de que corresponden a 100 g, no a una ración.');
-  }catch(error){say('OCR no disponible: '+error.message);}finally{file.value='';gallery.value='';}
+   say(Object.values(parsed).some(v=>v!==null)?'Texto reconocido. Revisa los valores por 100 g antes de guardar.':'Se leyó texto, pero no se pudieron identificar valores nutricionales. Introdúcelos manualmente o prueba otra foto.');
+  }catch(error){say('OCR no disponible: '+error.message);}finally{file.value='';gallery.value='';busy=false;}
  };
  file.onchange=()=>processImage(file.files?.[0]);
  gallery.onchange=()=>processImage(gallery.files?.[0]);
