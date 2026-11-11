@@ -2,12 +2,29 @@
 const number = value => { if(value===null||value===undefined||String(value).trim()==='')return null; const n=Number(String(value??'').replace(/\s/g,'').replace(',','.')); return Number.isFinite(n)&&n>=0?n:null; };
 export function parseNutrition(text){
  const lines=String(text).split(/\n/).map(x=>x.trim()).filter(Boolean);
- const find=(patterns,max)=>{for(const line of lines){if(!patterns.some(p=>p.test(line)))continue;const m=line.match(/(?:^|\s|:)\s*(\d{1,4}(?:[.,]\d{1,2})?)\s*(?:g|kcal)?\b/i);if(m){const n=number(m[1]);if(n!==null&&n<=max)return n;}}return null;};
- const kcal=find([/\b(?:energ[ií]a|energy|valor energ[eé]tico)\b.*\bkcal\b/i,/\bkcal\b/i],1000);
- const p=find([/\b(?:prote[ií]nas?|protein)\b/i],100);
- const c=find([/\b(?:hidratos|carbohidratos|carbohydrates|carbs)\b/i],100);
- const f=find([/\b(?:grasas?|fat|l[ií]pidos)\b/i],100);
- return {kcal,p,c,f};
+ const patterns={kcal:/\b(?:kcal|calor[ií]as)\b/i,p:/\b(?:prote[ií]nas?|protein)\b/i,c:/\b(?:hidratos|carbohidratos|carbohydrates|carbs)\b/i,f:/\b(?:grasas?\s*(?:totales?)?|fat|l[ií]pidos)\b/i};
+ const result={kcal:null,p:null,c:null,f:null};
+ const extract=(line,key)=>{
+  let match;
+  if(key==='kcal'){
+   match=line.match(/(\d{1,4}(?:[.,]\d{1,2})?)\s*kcal\b/i);
+   if(match)return number(match[1]);
+  }
+  const label=patterns[key].exec(line);
+  if(!label)return null;
+  let tail=line.slice(label.index+label[0].length).replace(/^\s*[:.\-]?\s*/,'');
+  const values=[...tail.matchAll(/(\d{1,4}(?:[.,]\d{1,2})?)\s*(?:g|kcal)?(?=\s|$|\/|\||;)/gi)].map(m=>number(m[1])).filter(v=>v!==null);
+  return values.find(v=>v<=(key==='kcal'?1000:100))??null;
+ };
+ for(let i=0;i<lines.length;i++){
+  for(const key of Object.keys(result)){
+   if(result[key]!==null)continue;
+   let v=extract(lines[i],key);
+   if(v===null&&patterns[key].test(lines[i])&&i+1<lines.length&&/^\s*\d/.test(lines[i+1]))v=number(lines[i+1].match(/\d+(?:[.,]\d+)?/)?.[0]);
+   if(v!==null&&v<=(key==='kcal'?1000:100))result[key]=v;
+  }
+ }
+ return result;
 }
 export function barcodeProduct(product){
  const n=product?.nutriments||{};
@@ -70,7 +87,7 @@ export function setupScanner({onFood,onMessage}){
    try{({data:{text}}=await worker.recognize(image));}finally{await worker.terminate();}
    if(!text.trim())throw Error('No se detectó texto legible. Prueba con una foto más cercana y nítida.');
    const parsed=parseNutrition(text);populate({...Object.fromEntries(new FormData(form)),...Object.fromEntries(Object.entries(parsed).filter(([,v])=>v!==null))});
-   say(Object.values(parsed).some(v=>v!==null)?'Texto reconocido. Revisa los valores por 100 g antes de guardar.':'Se leyó texto, pero no se pudieron identificar valores nutricionales. Introdúcelos manualmente o prueba otra foto.');
+   say(Object.values(parsed).some(v=>v!==null)?'Valores detectados: '+Object.entries(parsed).filter(([,v])=>v!==null).map(([k,v])=>k+': '+v).join(', ')+'. Revisa los datos por 100 g.':'Se leyó texto, pero no se pudieron identificar valores nutricionales. Introdúcelos manualmente o prueba otra foto.');
   }catch(error){say('OCR no disponible: '+error.message);}finally{file.value='';gallery.value='';busy=false;}
  };
  file.onchange=()=>processImage(file.files?.[0]);
