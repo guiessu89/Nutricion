@@ -15,7 +15,7 @@ export function barcodeProduct(product){
  return {name:product?.product_name_es||product?.product_name||'',kcal:val('energy-kcal_100g'),p:val('proteins_100g'),c:val('carbohydrates_100g'),f:val('fat_100g')};
 }
 export function setupScanner({onFood,onMessage}){
- const dialog=document.getElementById('scanner-dialog'),file=document.getElementById('scanner-photo'),status=document.getElementById('scanner-status'),form=document.getElementById('scanner-form');
+ const dialog=document.getElementById('scanner-dialog'),file=document.getElementById('scanner-photo'),gallery=document.getElementById('scanner-gallery'),status=document.getElementById('scanner-status'),form=document.getElementById('scanner-form');
  let stream=null,detector=null,frame=0;
  const video=document.getElementById('scanner-video');
  const say=t=>{status.textContent=t;onMessage?.(t);};
@@ -51,8 +51,8 @@ export function setupScanner({onFood,onMessage}){
  dialog.addEventListener('close',stop);
  document.getElementById('scanner-start').onclick=start;
  document.getElementById('scanner-lookup').onclick=()=>{const code=document.getElementById('scanner-code').value.trim();if(!/^\d{8,14}$/.test(code)){say('Introduce un código de 8 a 14 cifras.');return;}stop();lookup(code);};
- file.onchange=async()=>{
-  const image=file.files?.[0];if(!image)return;
+ const processImage=async image=>{
+  if(!image)return;
   stop();say('Reconociendo texto en el dispositivo…');
   try{
    if(!window.Tesseract){
@@ -63,7 +63,9 @@ export function setupScanner({onFood,onMessage}){
    try{({data:{text}}=await worker.recognize(image));}finally{await worker.terminate();}
    const parsed=parseNutrition(text);populate({...Object.fromEntries(new FormData(form)),...Object.fromEntries(Object.entries(parsed).filter(([,v])=>v!==null))});
    say('Texto reconocido. Revisa los valores y asegúrate de que corresponden a 100 g, no a una ración.');
-  }catch(error){say('OCR no disponible: '+error.message);}finally{file.value='';}
+  }catch(error){say('OCR no disponible: '+error.message);}finally{file.value='';gallery.value='';}
  };
+ file.onchange=()=>processImage(file.files?.[0]);
+ gallery.onchange=()=>processImage(gallery.files?.[0]);
  form.onsubmit=e=>{e.preventDefault();const data=Object.fromEntries(new FormData(form));const food={name:data.name.trim()};for(const k of ['kcal','p','c','f']){food[k]=number(data[k]);if(food[k]===null||food[k]>(k==='kcal'?1000:100)){say('Comprueba '+k+' por 100 g.');return;}}if(!food.name){say('Introduce el nombre del alimento.');return;}onFood(food);dialog.close();};
 }
