@@ -107,10 +107,36 @@ export function setupScanner({onFood,onMessage}){
    }
    say('Leyendo la etiqueta. Puede tardar unos segundos…');
    const worker=await window.Tesseract.createWorker('spa+eng');
-   let text='';
-   try{({data:{text}}=await worker.recognize(source));}finally{await worker.terminate();}
+   let text='',parsed={kcal:null,p:null,c:null,f:null};
+   try{
+    const original=await worker.recognize(source);
+    text=original.data.text||'';parsed=parseNutrition(text);
+    // Second pass: upscale, grayscale and improve local contrast on small labels.
+    if(Object.values(parsed).filter(v=>v!==null).length<4){
+     const bitmap=source instanceof HTMLCanvasElement?source:await createImageBitmap(source);
+     try{
+      const scale=Math.min(3,Math.max(1,1800/Math.max(bitmap.width,bitmap.height)));
+      const canvas=document.createElement('canvas');
+      canvas.width=Math.min(3000,Math.round(bitmap.width*scale));
+      canvas.height=Math.min(3000,Math.round(bitmap.height*scale));
+      const ctx=canvas.getContext('2d',{willReadFrequently:true});
+      ctx.drawImage(bitmap,0,0,canvas.width,canvas.height);
+      const data=ctx.getImageData(0,0,canvas.width,canvas.height);
+      const px=data.data;
+      let low=255,high=0;
+      for(let i=0;i<px.length;i+=4){const v=Math.round(.299*px[i]+.587*px[i+1]+.114*px[i+2]);px[i]=px[i+1]=px[i+2]=v;low=Math.min(low,v);high=Math.max(high,v);}
+      const range=Math.max(1,high-low);
+      for(let i=0;i<px.length;i+=4){const v=Math.max(0,Math.min(255,(px[i]-low)*255/range));px[i]=px[i+1]=px[i+2]=v;}
+      ctx.putImageData(data,0,0);
+      say('Realizando una segunda lectura con contraste mejorado…');
+      const second=await worker.recognize(canvas);
+      const candidate=parseNutrition(second.data.text||'');
+      for(const key of Object.keys(parsed))if(parsed[key]===null&&candidate[key]!==null)parsed[key]=candidate[key];
+      if((second.data.text||'').length>text.length)text=second.data.text;
+     }finally{if(bitmap!==source)bitmap.close();}
+    }
+   }finally{await worker.terminate();}
    if(!text.trim())throw Error('No se detectó texto legible. Prueba con una selección más nítida.');
-   const parsed=parseNutrition(text);
    populate({...Object.fromEntries(new FormData(form)),...Object.fromEntries(Object.entries(parsed).filter(([,v])=>v!==null))});
    const detected=Object.entries(parsed).filter(([,v])=>v!==null);
    say(detected.length?'Valores detectados: '+detected.map(([k,v])=>k+': '+v).join(', ')+'. Comprueba los valores por 100 g.':'Se reconoció texto pero no los valores. Prueba otro recorte o introdúcelos manualmente.');
