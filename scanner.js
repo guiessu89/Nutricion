@@ -38,6 +38,10 @@ export function setupScanner({onFood,onMessage}){
  const photoStatus=document.getElementById('scanner-photo-status');
  const video=document.getElementById('scanner-video');
  const snapshot=document.getElementById('scanner-snapshot');
+ const detection=document.getElementById('scanner-detection'),detectionCode=document.getElementById('scanner-detection-code'),cameraFrame=document.getElementById('scanner-camera-frame');
+ const codeInput=document.getElementById('scanner-code');
+ const showDetection=code=>{codeInput.value=code;detectionCode.textContent=code;detection.hidden=false;cameraFrame.classList.add('barcode-detected');};
+ const clearDetection=()=>{detection.hidden=true;cameraFrame.classList.remove('barcode-detected');};
  let cameraMode=null,barcodePaused=false,barcodeOpening=false,barcodeSession=0,reader=null,scanFailures=0;
  const cropArea=document.getElementById('scanner-crop-area'),cropStage=document.getElementById('scanner-crop-stage'),cropImage=document.getElementById('scanner-crop-image'),cropSelection=document.getElementById('scanner-crop-selection');
  let selectedImage=null,selection=null,dragStart=null;
@@ -68,7 +72,7 @@ export function setupScanner({onFood,onMessage}){
  document.getElementById('scanner-crop-full').onclick=()=>{if(!busy&&selectedImage)recognize(selectedImage);};
 
  const say=t=>{status.textContent=t;onMessage?.(t);};
- const stop=()=>{barcodeSession++;reader=null;scanFailures=0;barcodePaused=false;barcodeOpening=false;cameraMode=null;document.getElementById('scanner-start').textContent='Abrir cámara para código';snapshot.hidden=true;zxingControls?.stop();zxingControls=null;cancelAnimationFrame(frame);frame=0;stream?.getTracks().forEach(t=>t.stop());stream=null;video.srcObject=null;};
+ const stop=()=>{clearDetection();barcodeSession++;reader=null;scanFailures=0;barcodePaused=false;barcodeOpening=false;cameraMode=null;document.getElementById('scanner-start').textContent='Abrir cámara para código';snapshot.hidden=true;zxingControls?.stop();zxingControls=null;cancelAnimationFrame(frame);frame=0;stream?.getTracks().forEach(t=>t.stop());stream=null;video.srcObject=null;};
  const populate=food=>{for(const k of ['name','kcal','p','c','f'])form.elements[k].value=food[k]??'';};
  const lookup=async code=>{
   say('Buscando código de barras…');
@@ -83,6 +87,7 @@ export function setupScanner({onFood,onMessage}){
  const barcodeFound=async code=>{
   if(barcodePaused||cameraMode!=='barcode')return;
   barcodePaused=true;
+  showDetection(code);
   const session=barcodeSession;
   say('Código detectado: '+code+'. Consultando producto…');
   await lookup(code);
@@ -129,7 +134,7 @@ export function setupScanner({onFood,onMessage}){
  async function start(){
   if(barcodeOpening)return;
   if(cameraMode==='barcode'&&stream?.active){
-   barcodePaused=false;
+   barcodePaused=false;clearDetection();
    if(!detector&&!zxingControls){
     try{await beginZxing(barcodeSession);}catch(error){say('No se pudo reanudar la lectura: '+error.message);return;}
    }
@@ -207,7 +212,7 @@ export function setupScanner({onFood,onMessage}){
     code=result?.getText()||null;
    }
    if(!code)throw Error('No se encontró un código legible.');
-   document.getElementById('scanner-code').value=code;
+   showDetection(code);
    say('Código detectado: '+code);
    await lookup(code);
   }catch(error){
