@@ -182,6 +182,39 @@ export function setupScanner({onFood,onMessage}){
  dialog.addEventListener('close',()=>{selectedImage=null;selection=null;dragStart=null;cropArea.hidden=true;cropImage.removeAttribute('src');drawSelection();stop();if(previewURL){URL.revokeObjectURL(previewURL);previewURL=null;}preview.hidden=true;photoStatus.hidden=true;});
  document.getElementById('scanner-start').onclick=start;
  document.getElementById('scanner-lookup').onclick=()=>{const code=document.getElementById('scanner-code').value.trim();if(!/^\d{8,14}$/.test(code)){say('Introduce un código de 8 a 14 cifras.');return;}stop();lookup(code);};
+ const imageBarcodeButton=document.getElementById('scanner-image-barcode');
+ const decodeImageBarcode=async()=>{
+  if(!selectedImage||busy)return;
+  busy=true;imageBarcodeButton.disabled=true;
+  try{
+   say('Buscando código de barras en la fotografía…');
+   let code=null;
+   if('BarcodeDetector' in window){
+    try{
+     const bitmap=await createImageBitmap(selectedImage);
+     try{
+      const imageDetector=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e']});
+      const matches=await imageDetector.detect(bitmap);
+      code=matches.find(item=>/^\\d{8,14}$/.test(item.rawValue))?.rawValue||null;
+     }finally{bitmap.close();}
+    }catch{}
+   }
+   if(!code){
+    const ZXing=await import('https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/+esm');
+    const imageReader=new ZXing.BrowserMultiFormatReader();
+    // decodeFromImageUrl works on a still image and does not request camera access.
+    const result=await imageReader.decodeFromImageUrl(previewURL);
+    code=result?.getText()||null;
+   }
+   if(!code)throw Error('No se encontró un código legible.');
+   document.getElementById('scanner-code').value=code;
+   say('Código detectado: '+code);
+   await lookup(code);
+  }catch(error){
+   say('No se pudo leer el código de la foto: '+error.message+'. Acerca el código, enfócalo y vuelve a fotografiarlo.');
+  }finally{busy=false;imageBarcodeButton.disabled=false;}
+ };
+ imageBarcodeButton.onclick=decodeImageBarcode;
  const recognize=async source=>{
   if(!source||busy)return;
   busy=true;cropArea.hidden=true;document.getElementById('scanner-ocr-debug').hidden=true;say('Preparando reconocimiento OCR…');
@@ -237,7 +270,7 @@ export function setupScanner({onFood,onMessage}){
   preview.src=previewURL;preview.hidden=true;
   cropImage.src=previewURL;cropArea.hidden=false;
   photoStatus.hidden=false;photoStatus.textContent='Imagen seleccionada: '+image.name+' ('+Math.round(image.size/1024)+' KB)';
-  say('Arrastra el dedo para seleccionar la tabla nutricional y pulsa «Leer selección».');
+  say('Foto cargada. Pulsa «Leer código de barras de esta foto» para buscar el producto, o selecciona la tabla para leer sus nutrientes.');
   file.value='';gallery.value='';
  };
  file.onchange=()=>processImage(file.files?.[0]);
