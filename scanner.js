@@ -111,7 +111,7 @@ export function setupScanner({onFood,onMessage}){
  document.getElementById('scanner-lookup').onclick=()=>{const code=document.getElementById('scanner-code').value.trim();if(!/^\d{8,14}$/.test(code)){say('Introduce un código de 8 a 14 cifras.');return;}stop();lookup(code);};
  const recognize=async source=>{
   if(!source||busy)return;
-  busy=true;cropArea.hidden=true;say('Preparando reconocimiento OCR…');
+  busy=true;cropArea.hidden=true;document.getElementById('scanner-ocr-debug').hidden=true;say('Preparando reconocimiento OCR…');
   try{
    if(!window.Tesseract){
     await new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';script.onload=resolve;script.onerror=()=>reject(Error('No se pudo cargar el motor OCR. Revisa la conexión.'));document.head.append(script);});
@@ -147,6 +147,8 @@ export function setupScanner({onFood,onMessage}){
      }finally{if(bitmap!==source)bitmap.close();}
     }
    }finally{await worker.terminate();}
+   document.getElementById('scanner-ocr-debug').hidden=false;
+   document.getElementById('scanner-ocr-text').textContent=text||'(No se reconoció texto)';
    if(!text.trim())throw Error('No se detectó texto legible. Prueba con una selección más nítida.');
    populate({...Object.fromEntries(new FormData(form)),...Object.fromEntries(Object.entries(parsed).filter(([,v])=>v!==null))});
    const detected=Object.entries(parsed).filter(([,v])=>v!==null);
