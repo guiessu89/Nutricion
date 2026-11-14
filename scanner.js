@@ -272,6 +272,8 @@ export function setupScanner({onFood,onMessage}){
   photoStatus.hidden=false;photoStatus.textContent='Imagen seleccionada: '+image.name+' ('+Math.round(image.size/1024)+' KB)';
   say('Foto cargada. Pulsa «Leer código de barras de esta foto» para buscar el producto, o selecciona la tabla para leer sus nutrientes.');
   file.value='';gallery.value='';
+  // Try the barcode first; the crop/OCR controls remain available for nutrition tables.
+  await decodeImageBarcode();
  };
  file.onchange=()=>processImage(file.files?.[0]);
  gallery.onchange=()=>processImage(gallery.files?.[0]);
