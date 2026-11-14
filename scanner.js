@@ -37,6 +37,8 @@ export function setupScanner({onFood,onMessage}){
  const preview=document.getElementById('scanner-preview');
  const photoStatus=document.getElementById('scanner-photo-status');
  const video=document.getElementById('scanner-video');
+ const snapshot=document.getElementById('scanner-snapshot');
+ let cameraMode=null;
  const cropArea=document.getElementById('scanner-crop-area'),cropStage=document.getElementById('scanner-crop-stage'),cropImage=document.getElementById('scanner-crop-image'),cropSelection=document.getElementById('scanner-crop-selection');
  let selectedImage=null,selection=null,dragStart=null;
  const clamp=(n,min,max)=>Math.max(min,Math.min(max,n));
@@ -66,7 +68,7 @@ export function setupScanner({onFood,onMessage}){
  document.getElementById('scanner-crop-full').onclick=()=>{if(!busy&&selectedImage)recognize(selectedImage);};
 
  const say=t=>{status.textContent=t;onMessage?.(t);};
- const stop=()=>{zxingControls?.stop();zxingControls=null;cancelAnimationFrame(frame);frame=0;stream?.getTracks().forEach(t=>t.stop());stream=null;video.srcObject=null;};
+ const stop=()=>{cameraMode=null;snapshot.hidden=true;zxingControls?.stop();zxingControls=null;cancelAnimationFrame(frame);frame=0;stream?.getTracks().forEach(t=>t.stop());stream=null;video.srcObject=null;};
  const populate=food=>{for(const k of ['name','kcal','p','c','f'])form.elements[k].value=food[k]??'';};
  const lookup=async code=>{
   say('Buscando código de barras…');
@@ -87,7 +89,7 @@ export function setupScanner({onFood,onMessage}){
   stop();
   if(!navigator.mediaDevices?.getUserMedia){say('La cámara requiere HTTPS y permisos. También puedes introducir el código manualmente.');return;}
   try{
-   say('Abriendo cámara…');
+   cameraMode='barcode';say('Abriendo cámara…');
    if('BarcodeDetector' in window){
     try{
      detector=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e']});
@@ -104,6 +106,26 @@ export function setupScanner({onFood,onMessage}){
    say('Apunta al código de barras. Mantén la cámara estable.');
   }catch(error){stop();say('No se pudo iniciar el lector: '+error.message+'. Introduce el código manualmente.');}
  }
+ document.getElementById('scanner-label-camera').onclick=async()=>{
+  stop();
+  if(!navigator.mediaDevices?.getUserMedia){say('No se puede abrir la cámara integrada. Utiliza la cámara del teléfono o la galería.');return;}
+  try{
+   say('Abriendo cámara para fotografiar etiqueta…');
+   stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'}}});
+   cameraMode='label';video.srcObject=stream;await video.play();snapshot.hidden=false;
+   video.scrollIntoView({block:'nearest',behavior:'smooth'});
+   say('Encuadra la tabla nutricional y pulsa «Capturar etiqueta».');
+  }catch(error){stop();say('No se pudo abrir la cámara integrada: '+error.message+'. Usa la opción alternativa.');}
+ };
+ snapshot.onclick=async()=>{
+  if(cameraMode!=='label'||!stream||video.readyState<2){say('Espera a que aparezca la imagen de la cámara.');return;}
+  const canvas=document.createElement('canvas');canvas.width=video.videoWidth;canvas.height=video.videoHeight;
+  canvas.getContext('2d').drawImage(video,0,0);
+  stop();
+  const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',.94));
+  if(!blob){say('No se pudo capturar la imagen.');return;}
+  await processImage(new File([blob],'etiqueta-camara.jpg',{type:'image/jpeg'}));
+ };
  document.getElementById('scan-open').onclick=()=>{dialog.showModal();say('Escanea un código o fotografía la tabla nutricional.');};
  document.getElementById('scan-close').onclick=()=>dialog.close();
  dialog.addEventListener('close',()=>{selectedImage=null;selection=null;dragStart=null;cropArea.hidden=true;cropImage.removeAttribute('src');drawSelection();stop();if(previewURL){URL.revokeObjectURL(previewURL);previewURL=null;}preview.hidden=true;photoStatus.hidden=true;});
