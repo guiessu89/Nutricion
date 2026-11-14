@@ -172,6 +172,7 @@ document.querySelectorAll('[data-meal]').forEach(b=>b.onclick=()=>openFood(b.dat
  const updated=withAmount(entry,value);state.entries=state.entries.map(e=>e.id===entry.id?updated:e);
  if(!await save())return;render();toast('Cantidad actualizada');
  };
+ input.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();editor.requestSubmit();}});
  input.focus();input.select();
 });
 document.querySelectorAll('[data-delete]').forEach(b=>b.onclick=async()=>{state.entries=state.entries.filter(e=>e.id!==b.dataset.delete);if(!await save())return;render();});document.querySelectorAll('[data-weight-delete]').forEach(b=>b.onclick=async()=>{state.weights=state.weights.filter(w=>(w.id||w.date)!==b.dataset.weightDelete);if(!await save())return;render();});document.querySelectorAll('[data-activity-delete]').forEach(b=>b.onclick=async()=>{state.activities=state.activities.filter(a=>a.id!==b.dataset.activityDelete);if(!await save())return;render();});
