@@ -123,7 +123,7 @@ function weeklyReport(){
   lines.push(`Peso: ${weight?.weight!=null?weight.weight+' kg':'Sin medición'}.`);
  }
  lines.push('','## Notas para el análisis','Los datos proceden de los registros guardados en Nutricion. No se imputan comidas, actividad ni peso en días sin datos. Las calorías de ejercicio son estimaciones cuando están disponibles.');
- return {text:lines.join('\\n'),days,loggedDays,total,activities,weights,exercise};
+ return {text:lines.join('\n'),days,loggedDays,total,activities,weights,exercise};
 }
 function renderWeeklyReport(){
  const report=weeklyReport(),fmt=n=>Math.round(n*10)/10;
