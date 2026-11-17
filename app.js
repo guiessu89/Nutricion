@@ -183,7 +183,7 @@ document.querySelectorAll('[data-copy-meal]').forEach(button=>button.onclick=()=
  dialog.querySelector('form').onsubmit=async event=>{
   event.preventDefault();
   const data=new FormData(event.currentTarget),destination=String(data.get('destination')||''),destinationMeal=String(data.get('meal')||'');
-  if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(destination)||!['Desayuno','Comida','Cena','Tentempiés'].includes(destinationMeal))return;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(destination)||!['Desayuno','Comida','Cena','Tentempiés'].includes(destinationMeal))return;
   const copies=source.map(e=>({...structuredClone(e),id:crypto.randomUUID(),date:destination,meal:destinationMeal,planId:undefined}));
   state.entries.push(...copies);
   if(!await save()){state.entries.splice(-copies.length);dialog.querySelector('[data-copy-error]').textContent='No se pudo guardar la copia.';return;}
