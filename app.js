@@ -275,7 +275,7 @@ document.querySelectorAll('[data-delete]').forEach(b=>b.onclick=async()=>{state.
  dialog.querySelector('form').onsubmit=async e=>{
   e.preventDefault();const form=e.currentTarget;if(!form.reportValidity())return;
   const data=new FormData(form),dateValue=String(data.get('date')),timeValue=data.has('time')?String(data.get('time')):record.time;
-  if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(dateValue)){toast('Fecha no válida');return;}
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(dateValue)){toast('Fecha no válida');return;}
   const updated={...record,date:dateValue,...(record.time?{time:timeValue}:{})};
   for(const [key] of fields){const raw=String(data.get(key)??'');updated[key]=raw===''?null:Number(raw);}
   if(record.source==='renpho'&&(updated.weight!==record.weight||updated.bodyFat!==record.bodyFat)){updated.fatFreeMass=null;updated.importKey=undefined;}
