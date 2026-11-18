@@ -72,3 +72,6 @@ html{width:100%;overflow-x:clip;-webkit-text-size-adjust:100%}body{min-width:0;m
 
 /* Seven-day export */
 .weekly-report .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(105px,1fr));gap:12px;margin:16px 0}.weekly-report .grid>div{display:flex;flex-direction:column;gap:3px}.weekly-report .grid strong{font-size:21px}.weekly-report .grid small{font-size:12px}.weekly-preview{max-height:55dvh;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;line-height:1.5}.weekly-report .search-actions{display:flex;gap:8px;flex-wrap:wrap}.weekly-report .search-actions button{min-height:44px}
+
+/* Rolling seven-day nutritional averages */
+.rolling-average{display:block;font-size:.78rem;font-weight:600;line-height:1.4;color:#526d60;margin:3px 0 7px;letter-spacing:0}.rolling-average small{font-size:.7rem;font-weight:400;color:#7b8c81;white-space:nowrap}.calorie-summary .rolling-average{font-size:.86rem;margin:5px 0 8px}.stat .rolling-average{font-size:.73rem;margin:4px 0 6px}.stat .rolling-average small{font-size:.67rem}@media(max-width:420px){.stat .rolling-average{font-size:.68rem}.stat .rolling-average small{font-size:.62rem}}
