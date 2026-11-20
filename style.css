@@ -81,3 +81,29 @@ html{width:100%;overflow-x:clip;-webkit-text-size-adjust:100%}body{min-width:0;m
 
 /* Accessible mobile weight-history actions */
 .weight-history-mobile{display:none}@media(max-width:700px){.weight-history-desktop{display:none}.weight-history-mobile{display:grid;gap:12px}.weight-history-item{border:1px solid #e0e8df;border-radius:14px;padding:14px;min-width:0}.weight-history-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.weight-history-heading small{font-size:12px;color:#7a8a80}.weight-history-details{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:12px 0;color:#63766b;font-size:13px}.weight-history-actions{display:flex;gap:10px}.weight-history-actions button{flex:1;min-height:44px}.weight-history-actions [data-weight-edit]{background:#205849;color:white}}
+
+
+/* Food picker: compact, consistently aligned controls on desktop and mobile. */
+#food-dialog{--picker-gap:10px}
+#food-dialog button{line-height:1.25;overflow-wrap:normal}
+#food-dialog .search-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--picker-gap);align-items:stretch}
+#food-dialog .search-actions>button{width:100%;min-width:0;min-height:44px;display:flex;align-items:center;justify-content:center;text-align:center;padding:10px 12px;font-size:13px;line-height:1.25}
+#food-dialog #meal-presets .search-actions{margin-top:12px}
+#food-dialog #meal-presets .catalog-info{line-height:1.45;margin:10px 0}
+#food-dialog #meal-presets select{padding-right:34px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#food-dialog .result{display:grid;grid-template-columns:minmax(0,1fr) minmax(80px,108px) 44px;gap:10px;align-items:center}
+#food-dialog .result>div{min-width:0;overflow-wrap:anywhere}
+#food-dialog .result>label{min-width:0;width:100%;flex:none}
+#food-dialog .result>label input{width:100%;min-width:0}
+#food-dialog .result>button{width:44px;height:44px;min-width:44px;min-height:44px;display:grid;place-items:center;padding:0;flex:none}
+#food-dialog .result p{font-size:14px;line-height:1.35}
+#food-dialog .result small{line-height:1.45}
+@media(max-width:650px){
+ #food-dialog .search-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #food-dialog .search-actions button{flex:none;min-width:0;font-size:12px;padding:10px 8px}
+ #food-dialog .result{display:grid;grid-template-columns:minmax(0,1fr) minmax(74px,94px) 44px;gap:8px}
+ #food-dialog .result>div{grid-column:1;flex:none}
+ #food-dialog .result>label{grid-column:2;flex:none;min-width:0}
+ #food-dialog .result>button{grid-column:3}
+}
+@media(max-width:360px){#food-dialog .result{grid-template-columns:minmax(0,1fr) 72px 40px;gap:6px}#food-dialog .result>button{width:40px;min-width:40px}#food-dialog .search-actions button{font-size:11px}}
