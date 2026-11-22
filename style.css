@@ -118,3 +118,12 @@ html{width:100%;overflow-x:clip;-webkit-text-size-adjust:100%}body{min-width:0;m
 .daily-steps-form{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:10px;margin:12px 0 20px}
 .daily-steps-form button{min-height:44px}
 @media(max-width:480px){.daily-steps-form{grid-template-columns:1fr}.daily-steps-form button{width:100%}}
+
+
+/* Read-only Apple Health wearable panel */
+.wearable-card{margin:16px 0;padding:16px;border:1px solid #dce5dd;border-radius:16px;background:#f5f8f4}
+.wearable-card h3{font-size:17px;margin:0 0 12px;color:#204e43}
+.wearable-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.wearable-metrics>div{min-width:0;padding:10px;background:white;border-radius:10px;display:flex;flex-direction:column;gap:3px}
+.wearable-metrics small{color:#708377}.wearable-metrics strong{font-size:17px;color:#204e43}
+.wearable-workout{margin:10px 0 0;font-size:14px}
