@@ -107,3 +107,14 @@ html{width:100%;overflow-x:clip;-webkit-text-size-adjust:100%}body{min-width:0;m
  #food-dialog .result>button{grid-column:3}
 }
 @media(max-width:360px){#food-dialog .result{grid-template-columns:minmax(0,1fr) 72px 40px;gap:6px}#food-dialog .result>button{width:40px;min-width:40px}#food-dialog .search-actions button{font-size:11px}}
+
+
+/* Daily activity entry and wearable step log */
+#activity-form>div:has(#save-activity-preset){display:flex;flex-wrap:wrap;gap:8px}
+#activity-form>div:has(#save-activity-preset) button{min-height:42px;padding:9px 12px;font-size:13px}
+#activity-form [hidden],#activity-details [hidden]{display:none!important}
+.daily-steps{border-top:1px solid #dce3dc;margin-top:18px;padding-top:16px}
+.daily-steps h3{font-size:16px;margin:0 0 8px}
+.daily-steps-form{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:10px;margin:12px 0 20px}
+.daily-steps-form button{min-height:44px}
+@media(max-width:480px){.daily-steps-form{grid-template-columns:1fr}.daily-steps-form button{width:100%}}
