@@ -5,7 +5,7 @@
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2';
 const json=(status:number,body:unknown)=>new Response(JSON.stringify(body),{status,headers:{'Content-Type':'application/json','Cache-Control':'no-store'}});
 const num=(v:unknown,min:number,max:number):number|null=>v===null||v===undefined||v===''?null:typeof v==='number'&&Number.isFinite(v)&&v>=min&&v<=max?v:NaN;
-const validDay=(d:unknown)=>typeof d==='string'&&/^\\d{4}-\\d{2}-\\d{2}$/.test(d)&&!Number.isNaN(Date.parse(d+'T12:00:00Z'));
+const validDay=(d:unknown)=>typeof d==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(d)&&!Number.isNaN(Date.parse(d+'T12:00:00Z'));
 Deno.serve(async req=>{
  if(req.method!=='POST')return json(405,{error:'method_not_allowed'});
  const expected=Deno.env.get('WEARABLE_INGEST_TOKEN')||'';
